@@ -1,40 +1,35 @@
 #ifndef BASIS_H
 #define BASIS_H
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/quaternion.hpp>
+#include <cglm/cglm.h>
+#include <cglm/quat.h>
 
-using namespace glm;
-
-const vec3 X = vec3(1.0f, 0.0f, 0.0f);
-const vec3 Y = vec3(0.0f, 1.0f, 0.0f);
-const vec3 Z = vec3(0.0f, 0.0f, 1.0f);
+#define CAMERA_DIRECTION_INIT {0.0f, 0.0f, -1.0f, 0.0f}
+#define CAMERA_DIRECTION ((vec4)CAMERA_DIRECTION_INIT)
 
 // Default camera values
-const float BASIS_MOVE_SPEED   =  0.5f;
-const float BASIS_ROTATE_SPEED =  0.5f;
-const float BASIS_ANIMATE_SPEED = 1.0f;
+static const float BASIS_MOVE_SPEED   =  0.5f;
+static const float BASIS_ROTATE_SPEED =  0.5f;
+static const float BASIS_ANIMATE_SPEED = 1.0f;
 
-class Basis {
-public:
+typedef struct Basis {
     mat4 view;
     vec3 animation;
-    quat rotation;
+    versor rotation;
     bool camera;
+} Basis;
 
-    Basis(bool camera = false);
-    void move(const vec3& distances);
-    void rotate(const vec3& angles);
+Basis basis_init(bool camera);
+void basis_translate(Basis* basis, vec3 distances);
+void basis_rotate(Basis* basis, float angle, vec3 axis);
+void basis_rotate_all(Basis* basis, vec3 angles);
 
-    const vec4 get_camera_position() const;
-    const vec4 get_camera_direction() const;
+void basis_get_camera_position(Basis* basis, vec4 dest);
+void basis_get_camera_direction(Basis* basis, vec4 dest);
 
-    const vec4 get_position() const;
+void basis_get_position(Basis* basis, vec4 dest);
 
-    mat4 get_full_view() const;
+void basis_animate(Basis* basis, float deltaTime);
 
-    void animate(float deltaTime);
-};
 
 #endif // BASIS_H

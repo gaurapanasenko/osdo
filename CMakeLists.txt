@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(osdo)
+project(osdo C)
 
 ###############################################################################
 ## configuration ##############################################################
@@ -16,8 +16,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # These instructions search the directory tree when cmake is
 # invoked and put all files that match the pattern in the variables
 # `SOURCE_FILES` and `RESOURCE_FILES`.
-file(GLOB SOURCE_FILES src/*.cpp src/*.h)
-#file(GLOB RESOURCE_FILES res/*)
+file(GLOB SOURCE_FILES src/*.c src/*.h)
+file(GLOB RESOURCE_FILES res/*)
 
 ###############################################################################
 ## target definitions #########################################################
@@ -33,9 +33,9 @@ target_compile_options(${PROJECT_NAME} PUBLIC -Wall)
 #target_include_directories(${PROJECT_NAME} PUBLIC src/main)
 
 # This copies all resource files in the build directory.
-#add_custom_target(${PROJECT_NAME}_res ALL
-#  COMMAND ${CMAKE_COMMAND} -E make_directory "share/${PROJECT_NAME}/"
-#  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_FILES} "share/${PROJECT_NAME}/")
+add_custom_target(${PROJECT_NAME}_res ALL
+  COMMAND ${CMAKE_COMMAND} -E make_directory "share/${PROJECT_NAME}/"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_FILES} "share/${PROJECT_NAME}/")
 
 # Set resource files to target properties.
 #set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -45,21 +45,24 @@ target_compile_options(${PROJECT_NAME} PUBLIC -Wall)
 ## dependencies ###############################################################
 ###############################################################################
 
+#find_package(PkgConfig REQUIRED)
+find_package(ECM)
+set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR} ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
 # OpenGL
 find_package(OpenGL REQUIRED)
 include_directories(${OpenGL_INCLUDE_DIRS})
 
 # EGL
-find_package(EGL REQUIRED)
-include_directories(${EGL_INCLUDE_DIRS})
+#find_package(EGL REQUIRED)
+#include_directories(${EGL_INCLUDE_DIRS})
 
 # GLEW
-#find_package(GLEW REQUIRED)
-#include_directories(${GLEW_INCLUDE_DIRS})
+find_package(GLEW REQUIRED)
+include_directories(${GLEW_INCLUDE_DIRS})
 
-# GLM
-find_package(glm REQUIRED)
-include_directories(${glm_INCLUDE_DIRS})
+# CGLM
+#find_package(CGLM REQUIRED)
 
 # GLFW
 find_package(glfw3 REQUIRED)
@@ -74,8 +77,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${OpenGL_LIBRARIES}
   ${EGL_LIBRARIES}
   ${GLEW_LIBRARIES}
-  ${glm_LIBRARIES}
-  glfw
+  ${glfw3_LIBRARIES}
+  glfw cglm m GL
 #  ${GTKMM_LIBRARIES}
 )
 
