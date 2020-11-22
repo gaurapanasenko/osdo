@@ -4,21 +4,48 @@
 #include "conf.h"
 
 void mesh_subinit(Mesh *mesh, GLsizei vertices_size, GLsizei indices_size, Vertex *vertices, GLuint *indices) {
-    Mesh m = {vertices_size, indices_size, vertices, indices, 0, 0, 0};
+    *mesh = (Mesh){vertices_size, indices_size, vertices, indices};
+}
+
+void mesh_init(Mesh* mesh) {
+    Vertex *V = (Vertex*)malloc(sizeof(EXAMPLE_CUBE_VERTEX));
+    GLuint *E = (GLuint*)malloc(sizeof(EXAMPLE_CUBE_INDICIES));
+    memcpy(V, EXAMPLE_CUBE_VERTEX, sizeof(EXAMPLE_CUBE_VERTEX));
+    memcpy(E, EXAMPLE_CUBE_INDICIES, sizeof(EXAMPLE_CUBE_INDICIES));
+    mesh_subinit(mesh, sizeof(EXAMPLE_CUBE_VERTEX)/sizeof(Vertex),
+                 sizeof(EXAMPLE_CUBE_INDICIES)/sizeof(GLuint), V, E);
+}
+
+void mesh_draw(GlMesh *mesh) {
+    glBindVertexArray(mesh->VAO);
+    glDrawElements(GL_TRIANGLES, mesh->mesh->indices_size,
+                   GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+}
+
+void mesh_del(Mesh *mesh) {
+    free(mesh->vertices);
+    free(mesh->indices);
+}
+
+GlMesh mesh_bind(Mesh* mesh) {
+    GlMesh gm = {mesh, 0, 0, 0};
     // create buffers/arrays
-    glGenVertexArrays(1, &m.VAO);
-    glGenBuffers(1, &m.VBO);
-    glGenBuffers(1, &m.EBO);
+    glGenVertexArrays(1, &gm.VAO);
+    glGenBuffers(1, &gm.VBO);
+    glGenBuffers(1, &gm.EBO);
 
-    glBindVertexArray(m.VAO);
+    glBindVertexArray(gm.VAO);
     // load data into vertex buffers
-    glBindBuffer(GL_ARRAY_BUFFER, m.VBO);
-    glBufferData(GL_ARRAY_BUFFER, (size_t)vertices_size * sizeof(Vertex),
-                 vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, gm.VBO);
+    glBufferData(GL_ARRAY_BUFFER,
+                 (size_t)gm.mesh->vertices_size * sizeof(Vertex),
+                 gm.mesh->vertices, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (size_t)indices_size * sizeof(GLuint),
-                 indices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gm.EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 (size_t)gm.mesh->indices_size * sizeof(GLuint),
+                 gm.mesh->indices, GL_STATIC_DRAW);
 
     // set the vertex attribute pointers
     // vertex Positions
@@ -37,25 +64,11 @@ void mesh_subinit(Mesh *mesh, GLsizei vertices_size, GLsizei indices_size, Verte
                           (void*)offsetof(Vertex, Color));
 
     glBindVertexArray(0);
-    *mesh = m;
+    return gm;
 }
 
-void mesh_init(Mesh* mesh) {
-    Vertex *V = (Vertex*)malloc(sizeof(EXAMPLE_CUBE_VERTEX));
-    GLuint *E = (GLuint*)malloc(sizeof(EXAMPLE_CUBE_INDICIES));
-    memcpy(V, EXAMPLE_CUBE_VERTEX, sizeof(EXAMPLE_CUBE_VERTEX));
-    memcpy(E, EXAMPLE_CUBE_INDICIES, sizeof(EXAMPLE_CUBE_INDICIES));
-    mesh_subinit(mesh, sizeof(EXAMPLE_CUBE_VERTEX)/sizeof(Vertex),
-                 sizeof(EXAMPLE_CUBE_INDICIES)/sizeof(GLuint), V, E);
-}
-
-void mesh_draw(Mesh *mesh) {
-    glBindVertexArray(mesh->VAO);
-    glDrawElements(GL_TRIANGLES, mesh->indices_size, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
-}
-
-void mesh_del(Mesh *mesh) {
-    free(mesh->vertices);
-    free(mesh->indices);
+void mesh_unbind(GlMesh *mesh) {
+    glDeleteVertexArrays(1, &mesh->VAO);
+    glDeleteBuffers(1, &mesh->VBO);
+    glDeleteBuffers(1, &mesh->EBO);
 }

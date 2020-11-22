@@ -24,19 +24,24 @@ char * readFromFile(const char *path) {
 
 // utility function for checking shader compilation/linking errors.
 bool check_shader(GLuint shader, const int type) {
-    GLint success = -1;
-    GLchar infoLog[1024];
+    GLint err_log_size = 0;
+    GLchar *log;
 
     if (type == 0)
-        glGetProgramiv(shader, GL_LINK_STATUS, &success);
+        glGetProgramiv(shader, GL_LINK_STATUS, &err_log_size);
     else
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &err_log_size);
 
-    if (!success) {
-        glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-        printf("%s", infoLog);
+    if (!err_log_size) {
+        log = (GLchar*)malloc((unsigned long)err_log_size);
+        if (log == NULL) {
+            printf("Got some error, but cant allocate memory to read it.");
+        }
+        glGetShaderInfoLog(shader, err_log_size, NULL, log);
+        printf("%s", log);
+        free(log);
     }
-    return (bool)success;
+    return (bool)err_log_size;
 }
 
 GLuint compile_shaders(const char* vertexCode, const char* fragmentCode) {

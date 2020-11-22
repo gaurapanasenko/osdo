@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "basis.h"
+#include "conf.h"
 
 Basis basis_init(bool camera) {
     Basis basis = {
@@ -14,10 +15,14 @@ Basis basis_init(bool camera) {
 
 void basis_translate(Basis* basis, vec3 distances) {
     mat4 matrix = GLM_MAT4_IDENTITY_INIT;
+    glm_translate(matrix, distances);
+    glm_mat4_mul(matrix, basis->view, basis->view);
+}
+
+void basis_translate_speed(Basis* basis, vec3 distances) {
     vec3 new_distances;
     glm_vec3_muladds(distances, BASIS_MOVE_SPEED, new_distances);
-    glm_translate(matrix, new_distances);
-    glm_mat4_mul(matrix, basis->view, basis->view);
+    basis_translate(basis, new_distances);
 }
 
 void basis_rotate(Basis* basis, float angle, vec3 axis) {
@@ -31,6 +36,10 @@ void basis_rotate(Basis* basis, float angle, vec3 axis) {
         glm_quatv(qantnerion, new_angle, axis);
         glm_quat_mul(qantnerion, basis->rotation, basis->rotation);
     }
+}
+
+void basis_rotate_speed(Basis* basis, float angle, vec3 axis) {
+    basis_rotate(basis, BASIS_ROTATE_SPEED * angle, axis);
 }
 
 void basis_rotate_all(Basis *basis, vec3 angles) {
