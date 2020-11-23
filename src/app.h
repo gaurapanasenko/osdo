@@ -32,6 +32,8 @@ void app_resize(GLFWwindow* window, GLint width,
 void app_scroll(GLFWwindow* window, GLdouble xoffset,
                   GLdouble yoffset);
 
+void app_mouse(GLFWwindow* window, double xpos, double ypos);
+
 // glfw: when the keyboard was used, this callback is called
 // ------------------------------------------------------------------
 void app_key(GLFWwindow* window, int key, int scancode,

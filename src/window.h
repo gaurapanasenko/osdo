@@ -5,18 +5,20 @@
 #include "scene.h"
 #include "mesh.h"
 #include "uthash.h"
+#include "camera.h"
 
 typedef struct App App;
 
 typedef struct Window {
     // screen size
-    int screen_width;
-    int screen_height;
+    int screen_width, screen_height;
+    bool mouse_capute;
+    float last_x, last_y;
 
     GlMesh *meshes;
     Scene *scene;
     GLFWwindow *window;
-    Object camera;
+    Camera camera;
 
     // buffered data for loop
     mat4 mat4buf, projection;

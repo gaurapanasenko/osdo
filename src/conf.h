@@ -15,8 +15,8 @@
 #endif
 
 #define BASIS0POS ((vec3){ 0.0f, 0.0f, -32.0f})
-#define BASIS1POS ((vec3){-8.0f, 0.0f,   0.0f})
-#define BASIS2POS ((vec3){ 8.0f, 0.0f,   0.0f})
+#define BASIS1POS ((vec3){-8.0f, 0.0f,  0.0f})
+#define BASIS2POS ((vec3){ 8.0f, 0.0f,  0.0f})
 
 #define BASIS1ROT ((vec3){ 0.0f, 0.0f,  0.2f})
 #define BASIS2ROT ((vec3){ 0.0f, 0.0f, -0.2f})
@@ -27,10 +27,11 @@
 static const unsigned int SCR_WIDTH = 1366;
 static const unsigned int SCR_HEIGHT = 700;
 
-// Default camera values
-static const float OBJECT_MOVE_SPEED   =  .50f;
+static const float OBJECT_MOVE_SPEED   =  5.0f;
 static const float OBJECT_ROTATE_SPEED =  1.0f;
 static const float OBJECT_ANIMATE_SPEED = 1.0f;
+
+static const float SENSITIVITY = 0.01f;
 
 static vec3 UNUSED LAMP_POSITIONS[] = {
     {5.0f, 0.0f, 5.0f},

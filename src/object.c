@@ -8,8 +8,13 @@
 Object object_init(Mesh *mesh, GLuint *shader) {
     Object object = {
         GLM_MAT4_IDENTITY_INIT,
-        GLM_VEC3_ZERO_INIT,
-        GLM_VEC3_ZERO_INIT, mesh, shader
+        GLM_VEC4_BLACK_INIT,
+        GLM_VEC3_ZERO_INIT, mesh, shader,
+        {
+            object_translate_transformable,
+            object_rotate_transformable,
+            object_animate_transformable
+        }
     };
     return object;
 }
@@ -33,29 +38,18 @@ void object_translate(Object* object, vec3 distances) {
     glm_vec3_add(object->position, distances, object->position);
 }
 
-void object_translate_camera(Object* object, vec3 distances) {
-    vec4 dest = GLM_VEC4_BLACK_INIT, dist = GLM_VEC4_BLACK_INIT;
-    glm_vec3_copy(distances, dist);
-    glm_mat4_mulv(object->transform, dist, dest);
-    object_translate(object, dest);
-}
-
-void object_translate_speed(Object* object, vec3 distances, int active,
-                            float s) {
+void object_translate_transformable(
+        void* object, vec3 distances, float delta_time) {
     vec3 new_distances = GLM_VEC3_ZERO_INIT;
-    glm_vec3_muladds(distances, OBJECT_MOVE_SPEED * s, new_distances);
-    if (active)
-        object_translate(object, new_distances);
-    else
-        object_translate_camera(object, new_distances);
+    glm_vec3_muladds(distances, OBJECT_MOVE_SPEED * delta_time,
+                     new_distances);
+    object_translate((Object*)object, new_distances);
 }
 
 void object_rotate(Object* object, float angle, vec3 axis) {
-    glm_rotate(object->transform, angle, axis);
-}
-
-void object_rotate_speed(Object* object, float angle, vec3 axis) {
-    object_rotate(object, OBJECT_ROTATE_SPEED * angle, axis);
+    mat4 matrix = GLM_MAT4_IDENTITY_INIT;
+    glm_rotate(matrix, angle, axis);
+    glm_mat4_mul(matrix, object->transform, object->transform);
 }
 
 void object_rotate_all(Object *object, vec3 angles) {
@@ -64,23 +58,22 @@ void object_rotate_all(Object *object, vec3 angles) {
     object_rotate(object, angles[2], GLM_ZUP);
 }
 
-void object_get_camera_direction(Object* object, vec4 dest) {
-    glm_vec4_copy(CAMERA_DIRECTION, dest);
-    glm_mat4_mulv(object->transform, dest, dest);
+void object_rotate_transformable(
+        void* object, vec3 axis, float delta_time) {
+    object_rotate((Object*)object, delta_time * OBJECT_ROTATE_SPEED,
+                  axis);
 }
-/*
 
-
-void object_get_position(Object* object, vec4 dest) {
-    vec4 black = GLM_VEC4_BLACK_INIT;
-    glm_vec4_copy(black, dest);
-    glm_mat4_mulv(object->view, dest, dest);
-}
-*/
-
-void object_animate(Object* object, float deltaTime) {
-    vec3 animation;
-    glm_vec3_muladds(object->animation, OBJECT_ANIMATE_SPEED * deltaTime,
-                     animation);
+void object_animate(Object* object, float step) {
+    vec3 animation = GLM_VEC3_ZERO_INIT;
+    glm_vec3_muladds(object->animation, step, animation);
     object_rotate_all(object, animation);
+}
+
+void object_animate_transformable(
+        void* object, vec3 angles, float delta_time) {
+    vec3 animation = GLM_VEC3_ZERO_INIT;
+    glm_vec3_muladds(angles, delta_time, animation);
+    glm_vec3_add(((Object*)object)->animation, animation,
+                 ((Object*)object)->animation);
 }

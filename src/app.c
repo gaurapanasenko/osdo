@@ -154,6 +154,22 @@ void app_scroll(GLFWwindow* window, UNUSED GLdouble xoffset,
         *zoom = (float)M_PI / 4;
 }
 
+void app_mouse(GLFWwindow* window, double xpos, double ypos) {
+    Window *win = app_search_window(window);
+    float xoffset = (GLfloat)xpos - win->last_x;
+    float yoffset = (GLfloat)ypos - win->last_y;
+    win->last_x = (GLfloat)xpos;
+    win->last_y = (GLfloat)ypos;
+
+    if (win->mouse_capute) {
+        xoffset *= SENSITIVITY;
+        yoffset *= SENSITIVITY;
+
+        camera_rotate(&win->camera, xoffset, GLM_YUP);
+        camera_rotate(&win->camera, yoffset, GLM_XUP);
+    }
+}
+
 // glfw: when the keyboard was used, this callback is called
 // ------------------------------------------------------------------
 void app_key(GLFWwindow* window, int key, UNUSED int scancode,
@@ -166,13 +182,11 @@ void app_key(GLFWwindow* window, int key, UNUSED int scancode,
             scene->active++;
             break;
         case GLFW_KEY_Z:
-            if (scene->waterframe) {
-                scene->waterframe = 0;
+            if (scene->waterframe)
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            } else {
-                scene->waterframe = 1;
+            else
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            }
+            scene->waterframe = !scene->waterframe;
             break;
         case GLFW_KEY_X:
             scene->light = (scene->light)? 0 : 1;
@@ -197,6 +211,14 @@ void app_key(GLFWwindow* window, int key, UNUSED int scancode,
             break;
         case GLFW_KEY_M:
             *scene = scene_init(scene->app);
+            break;
+        case GLFW_KEY_B:
+            glfwMakeContextCurrent(window);
+            win->mouse_capute = !win->mouse_capute;
+            if (win->mouse_capute)
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            else
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             break;
         }
     }

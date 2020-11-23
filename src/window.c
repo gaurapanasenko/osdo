@@ -2,6 +2,7 @@
 #include "app.h"
 #include "conf.h"
 #include "shader.h"
+#include "camera.h"
 
 int window_init(App *app, Window *win, Scene* scene) {
     // glfw window creation
@@ -16,6 +17,7 @@ int window_init(App *app, Window *win, Scene* scene) {
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, app_resize);
     glfwSetScrollCallback(window, app_scroll);
+    glfwSetCursorPosCallback(window, app_mouse);
     glfwSetKeyCallback(window, app_key);
 
     // configure global opengl state
@@ -25,11 +27,12 @@ int window_init(App *app, Window *win, Scene* scene) {
 
     win->screen_width = SCR_WIDTH;
     win->screen_width = SCR_HEIGHT;
+    win->mouse_capute = false;
     win->scene = scene;
     win->window = window;
     win->meshes = NULL;
-    win->camera = object_init(NULL, NULL);
-    object_translate(&win->camera, BASIS0POS);
+    camera_init(&win->camera);
+    camera_translate(&win->camera, BASIS0POS);
 
     // load models
     // -----------
@@ -102,7 +105,7 @@ int window_loop(App *app, Window *win) {
         shader_set_float(*sh, "pointLight2.quadratic", 0.032f);
         // spotLight
         shader_set_vec3(*sh, "spotLight.position", win->camera.position);
-        object_get_camera_direction(&win->camera, win->vec4buf);
+        camera_get_direction(&win->camera, win->vec4buf);
         shader_set_vec3(*sh, "spotLight.direction", win->vec4buf);
         shader_set_vec3f(*sh, "spotLight.ambient", 0.0f, 0.0f, 0.0f);
         shader_set_vec3f(*sh, "spotLight.diffuse", 1.0f, 1.0f, 1.0f);
@@ -126,9 +129,7 @@ int window_loop(App *app, Window *win) {
     shader_set_mat4(*sh, "projection", win->projection);
 
     // camera/view transformation
-    glm_mat4_identity(win->mat4buf);
-    glm_translate(win->mat4buf, win->camera.position);
-    glm_mat4_mul(win->camera.transform, win->mat4buf, win->mat4buf);
+    camera_get_mat4(&win->camera, win->mat4buf);
     shader_set_mat4(*sh, "camera", win->mat4buf);
 
     // render the loaded models
@@ -166,60 +167,65 @@ int window_loop(App *app, Window *win) {
 void window_process_input(App *app, Window *win) {
     GLFWwindow *window = win->window;
     Scene *scene = win->scene;
-    Object *object;
-    if (scene->active)
-        object = &scene->object[scene->active];
-    else object = &win->camera;
+    void *object;
+    Transformable *trans;
+    GLfloat delta_time = (GLfloat)app->delta_time;
+    if (scene->active) {
+        object = (void*)&scene->object[scene->active - 1];
+        trans = &((Object*)object)->transformable;
+    } else {
+        object = (void*)&win->camera;
+        trans = &((Camera*)object)->transformable;
+    }
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    bool ctrl = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
-    GLfloat s = ((ctrl)? 10.0f : 1.0f) * (GLfloat)app->delta_time,
-            a = (scene->active ? -1.f : 1.f);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+        delta_time *= 10;
 
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-        object_translate_speed(object, GLM_YUP, scene->active, a * s);
+        trans->translate(object, GLM_YUP, -delta_time);
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        object_translate_speed(object, GLM_XUP, scene->active, a * s);
+        trans->translate(object, GLM_XUP, -delta_time);
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        object_translate_speed(object, GLM_ZUP, scene->active, a * s);
+        trans->translate(object, GLM_ZUP, -delta_time);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        object_translate_speed(object, GLM_ZUP, scene->active, -a * s);
+        trans->translate(object, GLM_ZUP, delta_time);
 
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-        object_translate_speed(object, GLM_YUP, scene->active, -a * s);
+        trans->translate(object, GLM_YUP, delta_time);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        object_translate_speed(object, GLM_XUP, scene->active, -a * s);
+        trans->translate(object, GLM_XUP, delta_time);
 
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-        object_rotate_speed(object, -s, GLM_ZUP);
+        trans->rotate(object, GLM_ZUP, -delta_time);
     if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-        object_rotate_speed(object, -s, GLM_YUP);
+        trans->rotate(object, GLM_YUP, -delta_time);
 
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-        object_rotate_speed(object, -s, GLM_XUP);
+        trans->rotate(object, GLM_XUP, -delta_time);
     if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
-        object_rotate_speed(object, s, GLM_XUP);
+        trans->rotate(object, GLM_XUP, delta_time);
 
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-        object_rotate_speed(object, s, GLM_ZUP);
+        trans->rotate(object, GLM_ZUP, delta_time);
     if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
-        object_rotate_speed(object, s, GLM_YUP);
+        trans->rotate(object, GLM_YUP, delta_time);
 
     if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-        object->animation[2] -= s;
+        trans->animate(object, GLM_ZUP, -delta_time);
     if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
-        object->animation[1] -= s;
+        trans->animate(object, GLM_YUP, -delta_time);
 
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
-        object->animation[0] -= s;
+        trans->animate(object, GLM_XUP, -delta_time);
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
-        object->animation[0] += s;
+        trans->animate(object, GLM_XUP, delta_time);
 
     if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
-        object->animation[2] += s;
+        trans->animate(object, GLM_ZUP, delta_time);
     if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-        object->animation[1] += s;
+        trans->animate(object, GLM_YUP, delta_time);
 }
