@@ -6,16 +6,13 @@ out vec3 FragPos;
 out vec3 Normal;
 
 uniform mat4 model;
-uniform mat4 rotation;
-uniform mat4 view;
-uniform mat4 camera_rotation;
+uniform mat4 camera;
 uniform mat4 projection;
 
 void main()
 {
-    mat4 Model = model * rotation;
-    FragPos = vec3(Model * vec4(aPos, 1.0));
-    Normal = mat3(transpose(inverse(Model))) * aNormal;
+    FragPos = vec3(model * vec4(aPos, 1.0));
+    Normal = mat3(transpose(inverse(model))) * aNormal;
     
-    gl_Position = projection * camera_rotation * view * vec4(FragPos, 1.0);
+    gl_Position = projection * camera * vec4(FragPos, 1.0);
 }

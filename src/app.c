@@ -182,6 +182,7 @@ void app_key(GLFWwindow* window, int key, UNUSED int scancode,
             scene->active++;
             break;
         case GLFW_KEY_Z:
+            glfwMakeContextCurrent(window);
             if (scene->waterframe)
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             else

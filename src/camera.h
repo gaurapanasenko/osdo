@@ -14,7 +14,7 @@ typedef struct Window Window;
 typedef struct Mesh Mesh;
 
 typedef struct Camera {
-    versor rotation;
+    vec3 rotation;
     vec4 position;
     vec3 animation;
     Transformable transformable;
