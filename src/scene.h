@@ -2,12 +2,12 @@
 #define SCENE_H
 #include <GL/gl.h>
 
-#include "basis.h"
+#include "object.h"
 
+typedef struct App App;
 typedef struct Scene {
-    // camera
-    Basis basis[3];
-    bool firstMouse;
+    App *app;
+    Object object[2];
 
     // active element
     int active;
@@ -23,6 +23,6 @@ typedef struct Scene {
     GLfloat zoom;
 } Scene;
 
-Scene scene_init(void);
+Scene scene_init(App *app);
 
 #endif // SCENE_H

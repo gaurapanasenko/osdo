@@ -21,15 +21,16 @@
 #define BASIS1ROT ((vec3){ 0.0f, 0.0f,  0.2f})
 #define BASIS2ROT ((vec3){ 0.0f, 0.0f, -0.2f})
 
-#define WINDOWS_NUM 1
+#define WINDOWS_NUM 2
+#define MESHES_NUM 3
 
 static const unsigned int SCR_WIDTH = 1366;
 static const unsigned int SCR_HEIGHT = 700;
 
 // Default camera values
-static const float BASIS_MOVE_SPEED   =  .50f;
-static const float BASIS_ROTATE_SPEED =  1.0f;
-static const float BASIS_ANIMATE_SPEED = 1.0f;
+static const float OBJECT_MOVE_SPEED   =  .50f;
+static const float OBJECT_ROTATE_SPEED =  1.0f;
+static const float OBJECT_ANIMATE_SPEED = 1.0f;
 
 static vec3 UNUSED LAMP_POSITIONS[] = {
     {5.0f, 0.0f, 5.0f},

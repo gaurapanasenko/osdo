@@ -4,6 +4,7 @@
 
 #include "scene.h"
 #include "mesh.h"
+#include "uthash.h"
 
 typedef struct App App;
 
@@ -12,17 +13,18 @@ typedef struct Window {
     int screen_width;
     int screen_height;
 
-    GlMesh e, p, cube;
-    Scene scene;
+    GlMesh *meshes;
+    Scene *scene;
     GLFWwindow *window;
+    Object camera;
 
     // buffered data for loop
-    mat4 mat4buf, *camera_view, camera_rotation, projection;
+    mat4 mat4buf, projection;
+    vec4 vec4buf;
     GLfloat resolution;
-    vec4 camera_position, camera_look_direction;
 } Window;
 
-int window_init(App *app, Window *win);
+int window_init(App *app, Window *win, Scene* scene);
 
 void window_del(Window *win);
 

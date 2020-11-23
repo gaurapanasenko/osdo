@@ -45,17 +45,18 @@ add_custom_target(${PROJECT_NAME}_res ALL
 ## dependencies ###############################################################
 ###############################################################################
 
-#find_package(PkgConfig REQUIRED)
-find_package(ECM)
-set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR} ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+#find_package(ECM)
+#set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR} ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
+# Math
+find_library(M_LIBRARY m REQUIRED)
 
 # OpenGL
 find_package(OpenGL REQUIRED)
 include_directories(${OpenGL_INCLUDE_DIRS})
 
-# EGL
-#find_package(EGL REQUIRED)
-#include_directories(${EGL_INCLUDE_DIRS})
+# GL
+find_library(GL_LIBRARY GL REQUIRED)
 
 # GLEW
 find_package(GLEW REQUIRED)
@@ -63,23 +64,23 @@ include_directories(${GLEW_INCLUDE_DIRS})
 
 # CGLM
 #find_package(CGLM REQUIRED)
+find_library(CGLM_LIBRARY cglm REQUIRED)
 
 # GLFW
 find_package(glfw3 REQUIRED)
 include_directories(${glfw3_INCLUDE_DIRS})
+find_library(GLFW_LIBRARY glfw REQUIRED)
 
-# GTKMM
-#find_package(PkgConfig REQUIRED)
-#pkg_check_modules(GTKMM REQUIRED gtkmm-3.0)
-#include_directories(${GTKMM_INCLUDE_DIRS})
+# uthash
+find_file(uthash_INCLUDE_FILE uthash.h REQUIRED)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
-  ${OpenGL_LIBRARIES}
-  ${EGL_LIBRARIES}
+  ${OpenGL_LIBRARIES} ${OpenGL_opengl_LIBRARY}
+  ${GL_LIBRARY}
   ${GLEW_LIBRARIES}
-  ${glfw3_LIBRARIES}
-  glfw cglm m GL
-#  ${GTKMM_LIBRARIES}
+  ${glfw3_LIBRARIES} ${GLFW_LIBRARY}
+  ${CGLM_LIBRARY}
+  ${M_LIBRARY}
 )
 
 ###############################################################################

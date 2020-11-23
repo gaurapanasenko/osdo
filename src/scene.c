@@ -1,21 +1,21 @@
 #include "scene.h"
 #include "conf.h"
+#include "app.h"
 
-Scene scene_init(void) {
+Scene scene_init(App *app) {
     Scene new_scene = {
+        app,
         {
-            basis_init(true),
-            basis_init(false),
-            basis_init(false),
+            object_init(app->meshes, &app->lightless_shader),
+            object_init(app->meshes + 1, &app->lightless_shader),
         },
-        true, 0, 0, 0, 1, 1, 1, 1, (float)M_PI / 4
+        0, 0, 0, 1, 1, 1, 1, (float)M_PI / 4
     };
-    basis_translate(&new_scene.basis[0], BASIS0POS);
-    basis_translate(&new_scene.basis[1], BASIS1POS);
-    basis_translate(&new_scene.basis[2], BASIS2POS);
+    object_translate(&new_scene.object[0], BASIS1POS);
+    object_translate(&new_scene.object[1], BASIS2POS);
 
-    basis_rotate_all(&new_scene.basis[1], BASIS1ROT);
-    basis_rotate_all(&new_scene.basis[2], BASIS2ROT);
+    object_rotate_all(&new_scene.object[0], BASIS1ROT);
+    object_rotate_all(&new_scene.object[1], BASIS2ROT);
 
     return new_scene;
 }

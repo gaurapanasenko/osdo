@@ -5,6 +5,9 @@
 
 #include <GL/gl.h>
 
+bool shader_compile(const char* vertexCode, const char* fragmentCode,
+                    GLuint *program);
+
 // constructor generates the shader on the fly
 bool shader_init(const char* vertexPath, const char* fragmentPath,
                  GLuint *shader);

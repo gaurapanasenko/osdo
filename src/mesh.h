@@ -3,6 +3,7 @@
 
 #include <cglm/cglm.h>
 #include <GL/gl.h>
+#include <uthash.h>
 
 typedef struct Vertex {
     vec3 Position;
@@ -19,10 +20,10 @@ typedef struct Mesh {
 typedef struct GlMesh {
     Mesh *mesh;
     GLuint VAO, VBO, EBO;
+    UT_hash_handle hh;
 } GlMesh;
 
 #define MESH_INIT {0, 0, NULL, NULL}
-#define GLMESH_INIT {NULL, 0, 0, 0}
 
 void mesh_subinit(Mesh* mesh, GLsizei vertices_size, GLsizei indices_size,
                   Vertex *vertices, GLuint *indices);
@@ -33,7 +34,7 @@ void mesh_draw(GlMesh *mesh);
 
 void mesh_del(Mesh* mesh);
 
-GlMesh mesh_bind(Mesh* mesh);
+void mesh_bind(Mesh* mesh, GlMesh* gm);
 
 void mesh_unbind(GlMesh* mesh);
 

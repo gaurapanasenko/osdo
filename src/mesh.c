@@ -28,24 +28,24 @@ void mesh_del(Mesh *mesh) {
     free(mesh->indices);
 }
 
-GlMesh mesh_bind(Mesh* mesh) {
-    GlMesh gm = {mesh, 0, 0, 0};
+void mesh_bind(Mesh* mesh, GlMesh* gm) {
+    gm->mesh = mesh;
     // create buffers/arrays
-    glGenVertexArrays(1, &gm.VAO);
-    glGenBuffers(1, &gm.VBO);
-    glGenBuffers(1, &gm.EBO);
+    glGenVertexArrays(1, &gm->VAO);
+    glGenBuffers(1, &gm->VBO);
+    glGenBuffers(1, &gm->EBO);
 
-    glBindVertexArray(gm.VAO);
+    glBindVertexArray(gm->VAO);
     // load data into vertex buffers
-    glBindBuffer(GL_ARRAY_BUFFER, gm.VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, gm->VBO);
     glBufferData(GL_ARRAY_BUFFER,
-                 (size_t)gm.mesh->vertices_size * sizeof(Vertex),
-                 gm.mesh->vertices, GL_STATIC_DRAW);
+                 (size_t)gm->mesh->vertices_size * sizeof(Vertex),
+                 gm->mesh->vertices, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gm.EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gm->EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 (size_t)gm.mesh->indices_size * sizeof(GLuint),
-                 gm.mesh->indices, GL_STATIC_DRAW);
+                 (size_t)gm->mesh->indices_size * sizeof(GLuint),
+                 gm->mesh->indices, GL_STATIC_DRAW);
 
     // set the vertex attribute pointers
     // vertex Positions
@@ -64,7 +64,6 @@ GlMesh mesh_bind(Mesh* mesh) {
                           (void*)offsetof(Vertex, Color));
 
     glBindVertexArray(0);
-    return gm;
 }
 
 void mesh_unbind(GlMesh *mesh) {

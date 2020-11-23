@@ -44,9 +44,10 @@ bool check_shader(GLuint shader, const int type) {
     return (bool)err_log_size;
 }
 
-GLuint compile_shaders(const char* vertexCode, const char* fragmentCode) {
+bool shader_compile(const char* vertexCode, const char* fragmentCode,
+                    GLuint *program) {
     // 2. compile shaders
-    GLuint id = 0, vertex, fragment;
+    GLuint vertex, fragment;
 
     // vertex shader
     vertex = glCreateShader(GL_VERTEX_SHADER);
@@ -54,7 +55,7 @@ GLuint compile_shaders(const char* vertexCode, const char* fragmentCode) {
     glCompileShader(vertex);
     if (!check_shader(vertex, 1)) {
         printf("Failed to compile vertex shader.\n%s", vertexCode);
-        return 0;
+        return false;
     }
 
     // fragment Shader
@@ -64,25 +65,25 @@ GLuint compile_shaders(const char* vertexCode, const char* fragmentCode) {
     if (!check_shader(fragment, 1)) {
         printf("Failed to compile fragment shader.\n%s", fragmentCode);
         glDeleteShader(vertex);
-        return 0;
+        return false;
     }
 
     // shader Program
-    id = glCreateProgram();
-    glAttachShader(id, vertex);
-    glAttachShader(id, fragment);
-    glLinkProgram(id);
-    if (!check_shader(id, 0)) {
+    *program = glCreateProgram();
+    glAttachShader(*program, vertex);
+    glAttachShader(*program, fragment);
+    glLinkProgram(*program);
+    if (!check_shader(*program, 0)) {
         printf("Failed to attach shaders.");
         glDeleteShader(vertex);
         glDeleteShader(fragment);
-        return 0;
+        return false;
     }
 
     // delete the shaders as they're linked into our program now and no longer necessery
     glDeleteShader(vertex);
     glDeleteShader(fragment);
-    return id;
+    return true;
 }
 
 bool shader_init(const char* vertexPath, const char* fragmentPath,
@@ -103,7 +104,8 @@ bool shader_init(const char* vertexPath, const char* fragmentPath,
         return false;
     }
 
-    *shader = compile_shaders(vertex, fragment);
+    if (!shader_compile(vertex, fragment, shader))
+        return false;
 
     free(vertex);
     free(fragment);

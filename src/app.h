@@ -4,10 +4,11 @@
 #include "conf.h"
 
 typedef struct App {
-    Mesh e, p, cube;
+    Mesh meshes[MESHES_NUM];
     GLuint lighting_shader, lightless_shader;
     GLFWwindow *main_window;
     Window windows[WINDOWS_NUM];
+    Scene scene;
 
     // timing
     GLdouble delta_time;

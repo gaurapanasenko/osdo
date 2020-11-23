@@ -52,15 +52,17 @@ int app_init(void) {
         return -1;
     }
 
+    app.scene = scene_init(&app);
+
     // load models
     // -----------
-    mesh_init(&app.e);
-    mesh_init(&app.p);
-    mesh_init(&app.cube);
+    mesh_init(app.meshes);
+    mesh_init(app.meshes + 1);
+    mesh_init(app.meshes + 2);
 
     glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
     for (int i = 0; i < WINDOWS_NUM; i++) {
-        window_init(&app, &app.windows[i]);
+        window_init(&app, &app.windows[i], &app.scene);
     }
 
     return 0;
@@ -99,10 +101,9 @@ int app_loop(void) {
     for (int i = 0; i < WINDOWS_NUM; i++) {
         window_del(&app.windows[i]);
     }
-
-    mesh_del(&app.e);
-    mesh_del(&app.p);
-    mesh_del(&app.cube);
+    for (int i = 0; i < MESHES_NUM; i++) {
+        mesh_del(&app.meshes[i]);
+    }
 
     // glfw: terminate, clearing all previously allocated GLFW resources
     // -----------------------------------------------------------------
@@ -144,7 +145,7 @@ void app_resize(GLFWwindow* window, GLint width, GLint height) {
 void app_scroll(GLFWwindow* window, UNUSED GLdouble xoffset,
                 GLdouble yoffset) {
     Window *win = app_search_window(window);
-    GLfloat *zoom = &win->scene.zoom;
+    GLfloat *zoom = &win->scene->zoom;
     if (*zoom >= 0.0f && *zoom <= (float)M_PI / 4)
         *zoom -= (float)yoffset;
     if (*zoom <= 0.0f)
@@ -158,7 +159,7 @@ void app_scroll(GLFWwindow* window, UNUSED GLdouble xoffset,
 void app_key(GLFWwindow* window, int key, UNUSED int scancode,
              int action, UNUSED int mods) {
     Window *win = app_search_window(window);
-    Scene *scene = &win->scene;
+    Scene *scene = win->scene;
     if (action == GLFW_PRESS) {
         switch (key) {
         case GLFW_KEY_TAB:
@@ -195,7 +196,7 @@ void app_key(GLFWwindow* window, int key, UNUSED int scancode,
             scene->spotLightOn = 0;
             break;
         case GLFW_KEY_M:
-            *scene = scene_init();
+            *scene = scene_init(scene->app);
             break;
         }
     }
