@@ -36,11 +36,11 @@ int window_init(App *app, Window *win, Scene* scene) {
 
     // load models
     // -----------
-    GlMesh *mesh;
+    GlMesh *glmesh;
     for (int i = 0; i < MESHES_NUM; i++) {
-        mesh = malloc(sizeof(GlMesh));
-        mesh_bind(&app->meshes[i], mesh);
-        HASH_ADD_INT(win->meshes, mesh, mesh);
+        glmesh = malloc(sizeof(GlMesh));
+        mesh_bind(&app->meshes[i], glmesh);
+        HASH_ADD_INT(win->meshes, mesh, glmesh);
     }
 
     return 0;
@@ -215,17 +215,17 @@ void window_process_input(App *app, Window *win) {
         trans->rotate(object, GLM_YUP, delta_time);
 
     if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-        trans->animate(object, GLM_ZUP, -delta_time);
+        trans->set_animation(object, GLM_ZUP, -delta_time);
     if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
-        trans->animate(object, GLM_YUP, -delta_time);
+        trans->set_animation(object, GLM_YUP, -delta_time);
 
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
-        trans->animate(object, GLM_XUP, -delta_time);
+        trans->set_animation(object, GLM_XUP, -delta_time);
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
-        trans->animate(object, GLM_XUP, delta_time);
+        trans->set_animation(object, GLM_XUP, delta_time);
 
     if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
-        trans->animate(object, GLM_ZUP, delta_time);
+        trans->set_animation(object, GLM_ZUP, delta_time);
     if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-        trans->animate(object, GLM_YUP, delta_time);
+        trans->set_animation(object, GLM_YUP, delta_time);
 }

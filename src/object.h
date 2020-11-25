@@ -34,7 +34,7 @@ void object_rotate_transformable(
 void object_get_position(Object* object, vec4 dest);
 
 void object_animate(Object* object, float step);
-void object_animate_transformable(
+void object_set_animation_transformable(
         void* object, vec3 angles, float delta_time);
 
 

@@ -6,25 +6,23 @@
 #include "shader.h"
 
 Object object_init(Mesh *mesh, GLuint *shader) {
-    Object object = {
+    return (Object){
         GLM_MAT4_IDENTITY_INIT,
         GLM_VEC4_BLACK_INIT,
         GLM_VEC3_ZERO_INIT, mesh, shader,
         {
             object_translate_transformable,
             object_rotate_transformable,
-            object_animate_transformable
+            object_set_animation_transformable
         }
     };
-    return object;
 }
 
 void object_draw(App *app, Window *win, Object *object) {
     // render the loaded model
     GlMesh *mesh;
     object_animate(object, (GLfloat)app->delta_time);
-    glm_mat4_copy(GLM_MAT4_IDENTITY, win->mat4buf);
-    glm_translate(win->mat4buf, object->position);
+    glm_translate_make(win->mat4buf, object->position);
     glm_mat4_mul(win->mat4buf, object->transform, win->mat4buf);
     shader_set_mat4(*object->shader, "model", win->mat4buf);
     HASH_FIND_INT(win->meshes, &object->mesh, mesh);
@@ -47,8 +45,8 @@ void object_translate_transformable(
 }
 
 void object_rotate(Object* object, float angle, vec3 axis) {
-    mat4 matrix = GLM_MAT4_IDENTITY_INIT;
-    glm_rotate(matrix, angle, axis);
+    mat4 matrix;
+    glm_rotate_make(matrix, angle, axis);
     glm_mat4_mul(matrix, object->transform, object->transform);
 }
 
@@ -70,7 +68,7 @@ void object_animate(Object* object, float step) {
     object_rotate_all(object, animation);
 }
 
-void object_animate_transformable(
+void object_set_animation_transformable(
         void* object, vec3 angles, float delta_time) {
     vec3 animation = GLM_VEC3_ZERO_INIT;
     glm_vec3_muladds(angles, delta_time, animation);

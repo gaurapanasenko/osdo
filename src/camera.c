@@ -9,14 +9,14 @@ void camera_init(Camera* camera) {
         {
             camera_translate_transformable,
             camera_rotate_transformable,
-            camera_animate_transformable
+            camera_set_animation_transformable
         }
     };
 }
 
 void camera_get_direction(Camera* camera, vec4 dest) {
-    mat4 matrix = GLM_MAT4_IDENTITY_INIT;
-    glm_rotate(matrix, camera->rotation[0], GLM_XUP);
+    mat4 matrix;
+    glm_rotate_make(matrix, camera->rotation[0], GLM_XUP);
     glm_rotate(matrix, camera->rotation[1], GLM_YUP);
     glm_rotate(matrix, camera->rotation[2], GLM_ZUP);
     glm_mat4_mulv(matrix, CAMERA_DIRECTION, dest);
@@ -62,7 +62,7 @@ void camera_rotate_transformable(
                   axis);
 }
 
-void camera_animate_transformable(
+void camera_set_animation_transformable(
         void* camera, vec3 angles, float delta_time) {
     vec3 animation;
     glm_vec3_muladds(angles, delta_time, animation);

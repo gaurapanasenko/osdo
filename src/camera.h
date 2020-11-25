@@ -34,7 +34,7 @@ void camera_rotate_all(Camera *camera, vec3 angles);
 void camera_rotate_transformable(
         void* camera, vec3 axis, float delta_time);
 
-void camera_animate_transformable(
+void camera_set_animation_transformable(
         void* camera, vec3 angles, float delta_time);
 
 #endif // CAMERA_H

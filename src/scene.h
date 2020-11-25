@@ -13,7 +13,7 @@ typedef struct Scene {
     int active;
 
     // states
-    bool waterframe;
+    bool wireframe;
     bool light;
     bool dirLightOn;
     bool pointLight1On;
