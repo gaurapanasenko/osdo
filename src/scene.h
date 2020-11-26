@@ -4,9 +4,8 @@
 
 #include "object.h"
 
-typedef struct App App;
 typedef struct Scene {
-    App *app;
+    struct App *app;
     Object object[2];
 
     // active element
@@ -23,6 +22,6 @@ typedef struct Scene {
     GLfloat zoom;
 } Scene;
 
-Scene scene_init(App *app);
+Scene scene_init(struct App *app);
 
 #endif // SCENE_H

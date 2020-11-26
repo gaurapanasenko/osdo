@@ -161,6 +161,6 @@ void shader_set_mat3(const GLuint shader, const char* name, const mat3 mat) {
     glUniformMatrix3fv(glGetUniformLocation(shader, name), 1, GL_FALSE, &mat[0][0]);
 }
 
-void shader_set_mat4(const GLuint shader, const char* name, const mat4 mat) {
+void shader_set_mat4(const GLuint shader, const char* name, mat4 mat) {
     glUniformMatrix4fv(glGetUniformLocation(shader, name), 1, GL_FALSE, &mat[0][0]);
 }

@@ -9,10 +9,6 @@
 #define CAMERA_DIRECTION_INIT {0.0f, 0.0f, -1.0f, 0.0f}
 #define CAMERA_DIRECTION ((vec4)CAMERA_DIRECTION_INIT)
 
-typedef struct App App;
-typedef struct Window Window;
-typedef struct Mesh Mesh;
-
 typedef struct Camera {
     vec3 rotation;
     vec4 position;

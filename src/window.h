@@ -1,13 +1,14 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 #include <GLFW/glfw3.h>
+#include <nuklear.h>
 
 #include "scene.h"
 #include "mesh.h"
 #include "uthash.h"
 #include "camera.h"
 
-typedef struct App App;
+struct App;
 
 typedef struct Window {
     // screen size
@@ -26,14 +27,14 @@ typedef struct Window {
     GLfloat resolution;
 } Window;
 
-int window_init(App *app, Window *win, Scene* scene);
+int window_init(struct App *app, Window *win, Scene* scene);
 
-void window_del(Window *win);
+void window_del(struct Window *win);
 
-int window_loop(App *app, Window *win);
+int window_loop(struct App *app, struct Window *win);
 
 // process all input
 // -----------------
-void window_process_input(App *app, Window *win);
+void window_process_input(struct App *app, struct Window *win);
 
 #endif // WINDOW_H

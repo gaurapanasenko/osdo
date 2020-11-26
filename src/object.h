@@ -5,10 +5,13 @@
 #include <GL/gl.h>
 
 #include "transformable.h"
+//#include "app.h"
+//#include "window.h"
+#include "mesh.h"
 
-typedef struct App App;
-typedef struct Window Window;
-typedef struct Mesh Mesh;
+struct App;
+struct Window;
+//typedef struct Mesh Mesh;
 
 typedef struct Object {
     mat4 transform;
@@ -20,7 +23,7 @@ typedef struct Object {
 } Object;
 
 Object object_init(Mesh *mesh, GLuint *shader);
-void object_draw(App *app, Window *win, Object *object);
+void object_draw(struct App *app, struct Window *win, Object *object);
 
 void object_translate(Object* object, vec3 distances);
 void object_translate_transformable(

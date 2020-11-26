@@ -27,7 +27,7 @@ file(GLOB RESOURCE_FILES res/*)
 # files are invisible when they are not explicitly part of the project.
 add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${RESOURCE_FILES})
 
-target_compile_options(${PROJECT_NAME} PUBLIC -Wall)
+target_compile_options(${PROJECT_NAME} PUBLIC -Wall -std=c99 -pedantic)
 
 # This allows to include files relative to the root of the src directory with a <> pair
 #target_include_directories(${PROJECT_NAME} PUBLIC src/main)
@@ -73,6 +73,10 @@ find_library(GLFW_LIBRARY glfw REQUIRED)
 
 # uthash
 find_file(uthash_INCLUDE_FILE uthash.h REQUIRED)
+
+# Nuklear
+target_precompile_headers(${PROJECT_NAME} PUBLIC nuklear/nuklear.h)
+include_directories(nuklear)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ${OpenGL_LIBRARIES} ${OpenGL_opengl_LIBRARY}

@@ -39,6 +39,6 @@ void shader_set_mat2 (const GLuint shader, const char* name,
 void shader_set_mat3 (const GLuint shader, const char* name,
                       const mat3 mat);
 void shader_set_mat4 (const GLuint shader, const char* name,
-                      const mat4 mat);
+                      mat4 mat);
 
 #endif // SHADER_H
