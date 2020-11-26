@@ -1,19 +1,6 @@
 #include "camera.h"
 #include "conf.h"
 
-void camera_init(Camera* camera) {
-    *camera = (Camera){
-        GLM_VEC3_ZERO_INIT,
-        GLM_VEC3_ZERO_INIT,
-        GLM_VEC3_ZERO_INIT,
-        {
-            camera_translate_transformable,
-            camera_rotate_transformable,
-            camera_set_animation_transformable
-        }
-    };
-}
-
 void camera_get_direction(Camera* camera, vec4 dest) {
     mat4 matrix;
     glm_rotate_make(matrix, camera->rotation[0], GLM_XUP);

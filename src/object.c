@@ -5,27 +5,21 @@
 #include "app.h"
 #include "shader.h"
 
-Object object_init(Mesh *mesh, GLuint *shader) {
-    return (Object){
-        GLM_MAT4_IDENTITY_INIT,
-        GLM_VEC4_BLACK_INIT,
-        GLM_VEC3_ZERO_INIT, mesh, shader,
-        {
-            object_translate_transformable,
-            object_rotate_transformable,
-            object_set_animation_transformable
-        }
-    };
+Object object_init(Mesh *mesh, Shader *shader) {
+    return OBJECT(mesh, shader);
 }
 
-void object_draw(App *app, Window *win, Object *object) {
+void object_init_empty(void *object) {
+    *((Object*)object) = OBJECT_EMPTY;
+}
+
+void object_draw(App *app, Object *object) {
     // render the loaded model
-    GlMesh *mesh;
+    Mesh *mesh = object->mesh;
     object_animate(object, (GLfloat)app->delta_time);
-    glm_translate_make(win->mat4buf, object->position);
-    glm_mat4_mul(win->mat4buf, object->transform, win->mat4buf);
-    shader_set_mat4(*object->shader, "model", win->mat4buf);
-    HASH_FIND_INT(win->meshes, &object->mesh, mesh);
+    glm_translate_make(app->mat4buf, object->position);
+    glm_mat4_mul(app->mat4buf, object->transform, app->mat4buf);
+    shader_set_mat4(object->shader, "model", app->mat4buf);
     if (mesh)
         mesh_draw(mesh);
     else

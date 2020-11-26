@@ -1,26 +1,43 @@
 #ifndef APP_H
 #define APP_H
-#include "window.h"
+#include <GLFW/glfw3.h>
 #include "conf.h"
+#include "shader.h"
+#include "mesh.h"
+#include "scene.h"
+#include "camera.h"
+#include "utarray.h"
 
 typedef struct App {
-    Mesh meshes[MESHES_NUM];
-    GLuint lighting_shader, lightless_shader;
-    GLFWwindow *main_window;
-    Window windows[WINDOWS_NUM];
+    Mesh *meshes;
+    Shader *shaders;
     Scene scene;
+    GLFWwindow *window;
+    UT_array *objects;
+    Camera camera;
 
     // timing
     GLdouble delta_time;
+
+    // screen size
+    int screen_width, screen_height;
+    bool mouse_capute;
+    float last_x, last_y;
+
+    // buffered data for loop
+    mat4 mat4buf, projection;
+    vec4 vec4buf;
 } App;
 
 int app_init(void);
 
+void app_del(void);
+
 int app_loop(void);
 
-bool app_should_closed(void);
+bool app_load_shader(const char *name);
 
-Window *app_search_window(GLFWwindow *window);
+bool app_should_closed(void);
 
 // glfw: when the window size changed this callback function executes
 // ------------------------------------------------------------------
@@ -38,5 +55,9 @@ void app_mouse(GLFWwindow* window, double xpos, double ypos);
 // ------------------------------------------------------------------
 void app_key(GLFWwindow* window, int key, int scancode,
                int action, int mods);
+
+// process all input
+// -----------------
+void app_process_input(void);
 
 #endif // APP_H

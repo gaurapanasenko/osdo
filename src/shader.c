@@ -3,6 +3,10 @@
 #include <GL/glew.h>
 
 #include "shader.h"
+#include "conf.h"
+
+#define VERTEX_PATH RES_DIR"/%s.vs"
+#define FRAGMENT_PATH RES_DIR"/%s.fs"
 
 char * readFromFile(const char *path) {
     char* data;
@@ -45,7 +49,7 @@ bool check_shader(GLuint shader, const int type) {
 }
 
 bool shader_compile(const char* vertexCode, const char* fragmentCode,
-                    GLuint *program) {
+                    Shader *shader) {
     // 2. compile shaders
     GLuint vertex, fragment;
 
@@ -69,11 +73,11 @@ bool shader_compile(const char* vertexCode, const char* fragmentCode,
     }
 
     // shader Program
-    *program = glCreateProgram();
-    glAttachShader(*program, vertex);
-    glAttachShader(*program, fragment);
-    glLinkProgram(*program);
-    if (!check_shader(*program, 0)) {
+    shader->shader = glCreateProgram();
+    glAttachShader(shader->shader, vertex);
+    glAttachShader(shader->shader, fragment);
+    glLinkProgram(shader->shader);
+    if (!check_shader(shader->shader, 0)) {
         printf("Failed to attach shaders.");
         glDeleteShader(vertex);
         glDeleteShader(fragment);
@@ -86,20 +90,30 @@ bool shader_compile(const char* vertexCode, const char* fragmentCode,
     return true;
 }
 
-bool shader_init(const char* vertexPath, const char* fragmentPath,
-                 GLuint *shader) {
+bool shader_init(const char* name, Shader *shader) {
     // 1. retrieve the vertex/fragment source code from filePath
-    GLchar* vertex = readFromFile(vertexPath);
+    const size_t path_len = strlen(VERTEX_PATH);
+    const size_t len = strlen(name);
+    strcpy(shader->name, name);
+    char *vertex_path = calloc(len + path_len, sizeof(char)),
+        *fragment_path = calloc(len + path_len, sizeof(char));
+    sprintf(vertex_path, VERTEX_PATH, name);
+    sprintf(fragment_path, FRAGMENT_PATH, name);
+    GLchar* vertex = readFromFile(vertex_path);
     if (vertex == NULL) {
         printf("ERROR: failed to read from vertex shader file %s.\n",
-               vertexPath);
+               vertex_path);
+        free(vertex_path);
+        free(fragment_path);
         return false;
     }
 
-    GLchar* fragment = readFromFile(fragmentPath);
+    GLchar* fragment = readFromFile(fragment_path);
     if (fragment == NULL) {
         printf("ERROR: failed to read from fragment shader file %s.\n",
-               fragmentPath);
+               fragment_path);
+        free(vertex_path);
+        free(fragment_path);
         free(vertex);
         return false;
     }
@@ -109,58 +123,73 @@ bool shader_init(const char* vertexPath, const char* fragmentPath,
 
     free(vertex);
     free(fragment);
+    free(vertex_path);
+    free(fragment_path);
 
     return true;
 }
 
-void shader_use(const GLuint shader) {
-    glUseProgram(shader);
+void shader_del(Shader *shader) {
+    glDeleteProgram(shader->shader);
 }
 
-void shader_set_bool(const GLuint shader, const char* name, bool value) {
-    glUniform1i(glGetUniformLocation(shader, name), (int)value);
+void shader_use(Shader *shader) {
+    glUseProgram(shader->shader);
 }
 
-void shader_set_int(const GLuint shader, const char* name, int value) {
-    glUniform1i(glGetUniformLocation(shader, name), value);
+void shader_set_bool(Shader *shader, const char* name, bool value) {
+    glUniform1i(glGetUniformLocation(shader->shader, name), (int)value);
 }
 
-void shader_set_float(const GLuint shader, const char* name, float value) {
-    glUniform1f(glGetUniformLocation(shader, name), value);
+void shader_set_int(Shader *shader, const char* name, int value) {
+    glUniform1i(glGetUniformLocation(shader->shader, name), value);
 }
 
-void shader_set_vec2(const GLuint shader, const char* name, const vec2 value) {
-    glUniform2fv(glGetUniformLocation(shader, name), 1, &value[0]);
+void shader_set_float(Shader *shader, const char* name, float value) {
+    glUniform1f(glGetUniformLocation(shader->shader, name), value);
 }
 
-void shader_set_vec2f(const GLuint shader, const char* name, float x, float y) {
-    glUniform2f(glGetUniformLocation(shader, name), x, y);
+void shader_set_vec2(Shader *shader, const char* name, vec2 value) {
+    glUniform2fv(glGetUniformLocation(shader->shader, name),
+                 1, &value[0]);
 }
 
-void shader_set_vec3(const GLuint shader, const char* name, const vec3 value) {
-    glUniform3fv(glGetUniformLocation(shader, name), 1, &value[0]);
+void shader_set_vec2f(Shader *shader, const char* name,
+                      float x, float y) {
+    glUniform2f(glGetUniformLocation(shader->shader, name), x, y);
 }
 
-void shader_set_vec3f(const GLuint shader, const char* name, float x, float y, float z) {
-    glUniform3f(glGetUniformLocation(shader, name), x, y, z);
+void shader_set_vec3(Shader *shader, const char* name, vec3 value) {
+    glUniform3fv(glGetUniformLocation(shader->shader, name),
+                 1, &value[0]);
 }
 
-void shader_set_vec4(const GLuint shader, const char* name, const vec4 value) {
-    glUniform4fv(glGetUniformLocation(shader, name), 1, &value[0]);
+void shader_set_vec3f(Shader *shader, const char* name,
+                      float x, float y, float z) {
+    glUniform3f(glGetUniformLocation(shader->shader, name), x, y, z);
 }
 
-void shader_set_vec4f(const GLuint shader, const char* name, float x, float y, float z, float w) {
-    glUniform4f(glGetUniformLocation(shader, name), x, y, z, w);
+void shader_set_vec4(Shader *shader, const char* name, vec4 value) {
+    glUniform4fv(glGetUniformLocation(shader->shader, name),
+                 1, &value[0]);
 }
 
-void shader_set_mat2(const GLuint shader, const char* name, const mat2 mat) {
-    glUniformMatrix2fv(glGetUniformLocation(shader, name), 1, GL_FALSE, &mat[0][0]);
+void shader_set_vec4f(Shader *shader, const char* name,
+                      float x, float y, float z, float w) {
+    glUniform4f(glGetUniformLocation(shader->shader, name), x, y, z, w);
 }
 
-void shader_set_mat3(const GLuint shader, const char* name, const mat3 mat) {
-    glUniformMatrix3fv(glGetUniformLocation(shader, name), 1, GL_FALSE, &mat[0][0]);
+void shader_set_mat2(Shader *shader, const char* name, mat2 mat) {
+    glUniformMatrix2fv(glGetUniformLocation(shader->shader, name),
+                       1, GL_FALSE, &mat[0][0]);
 }
 
-void shader_set_mat4(const GLuint shader, const char* name, mat4 mat) {
-    glUniformMatrix4fv(glGetUniformLocation(shader, name), 1, GL_FALSE, &mat[0][0]);
+void shader_set_mat3(Shader *shader, const char* name, mat3 mat) {
+    glUniformMatrix3fv(glGetUniformLocation(shader->shader, name),
+                       1, GL_FALSE, &mat[0][0]);
+}
+
+void shader_set_mat4(Shader *shader, const char* name, mat4 mat) {
+    glUniformMatrix4fv(glGetUniformLocation(shader->shader, name),
+                       1, GL_FALSE, &mat[0][0]);
 }

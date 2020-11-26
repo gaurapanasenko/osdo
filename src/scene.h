@@ -5,11 +5,10 @@
 #include "object.h"
 
 typedef struct Scene {
-    struct App *app;
-    Object object[2];
+    UT_array *objects;
 
     // active element
-    int active;
+    size_t active;
 
     // states
     bool wireframe;
@@ -22,6 +21,8 @@ typedef struct Scene {
     GLfloat zoom;
 } Scene;
 
-Scene scene_init(struct App *app);
+void scene_init(Scene *scene, UT_array *objects);
+
+void scene_del(Scene *scene);
 
 #endif // SCENE_H

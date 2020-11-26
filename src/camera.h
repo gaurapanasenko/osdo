@@ -16,8 +16,6 @@ typedef struct Camera {
     Transformable transformable;
 } Camera;
 
-void camera_init(Camera* camera);
-
 void camera_get_direction(Camera* camera, vec4 dest);
 void camera_get_mat4(Camera* camera, mat4 dest);
 
@@ -32,5 +30,18 @@ void camera_rotate_transformable(
 
 void camera_set_animation_transformable(
         void* camera, vec3 angles, float delta_time);
+
+#define CAMERA_INIT {\
+    GLM_VEC3_ZERO_INIT,\
+    GLM_VEC4_BLACK_INIT,\
+    GLM_VEC3_ZERO_INIT,\
+    {\
+        camera_translate_transformable,\
+        camera_rotate_transformable,\
+        camera_set_animation_transformable\
+    }}
+#define CAMERA ((Camera)CAMERA_INIT)
+
+#define OBJECT_INIT_EMPTY OBJECT_INIT(NULL, NULL)
 
 #endif // CAMERA_H
