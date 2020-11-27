@@ -21,15 +21,13 @@ typedef struct Mesh {
     UT_hash_handle hh;
 } Mesh;
 
-void mesh_subinit(Mesh* mesh, GLsizei vertices_size, GLsizei indices_size,
-                  Vertex *vertices, GLuint *indices);
+void mesh_subinit(Mesh* mesh, const char *name);
+void mesh_init(Mesh* mesh, const char *name);
+void mesh_del(Mesh* mesh);
 
-void mesh_init(Mesh* mesh, const char * name);
-
-void mesh_update(Mesh* mesh);
+void mesh_update(Mesh* mesh, GLsizei vertices_size, GLsizei indices_size, Vertex *vertices, GLuint *indices);
+void mesh_clear(Mesh* mesh);
 
 void mesh_draw(Mesh *mesh);
-
-void mesh_del(Mesh* mesh);
 
 #endif

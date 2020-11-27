@@ -215,6 +215,8 @@ void nk_glfw_render(NkGlfw* nkglfw, App *app,
 
         /* allocate vertex and element buffer */
         glBindVertexArray(mesh->vao);
+        glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
 
         glBufferData(GL_ARRAY_BUFFER, max_vertex_buffer, NULL,
                      GL_STREAM_DRAW);
@@ -277,6 +279,8 @@ void nk_glfw_render(NkGlfw* nkglfw, App *app,
 
     /* default OpenGL state */
     glUseProgram(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     glDisable(GL_BLEND);
     glDisable(GL_SCISSOR_TEST);

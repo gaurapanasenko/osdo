@@ -17,17 +17,22 @@ void object_draw(Object *object, mat4 mat4buf, GLdouble delta_time) {
     // render the loaded model
     Mesh *mesh = object->mesh;
     object_animate(object, (GLfloat)delta_time);
-    glm_translate_make(mat4buf, object->position);
-    glm_mat4_mul(mat4buf, object->transform, mat4buf);
+    object_get_mat4((void*)object, mat4buf);
     shader_set_mat4(object->shader, "model", mat4buf);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     mesh_draw(object->mesh_skel);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     mesh_draw(mesh);
 }
 
 void object_get_position_transformable(void* object, vec4 **position) {
     *position = &((Object*)object)->position;
+}
+
+void object_get_mat4(void* object, mat4 dest) {
+    Object* obj = (Object*)object;
+    glm_translate_make(dest, obj->position);
+    glm_mat4_mul(dest, obj->transform, dest);
 }
 
 void object_translate(Object* object, vec3 distances) {

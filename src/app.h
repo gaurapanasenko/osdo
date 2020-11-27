@@ -8,8 +8,10 @@
 #include "camera.h"
 #include "utarray.h"
 #include "nkglfw.h"
+#include "bmesh.h"
 
 typedef struct App {
+    UT_array *bmeshes;
     Mesh *meshes;
     Shader *shaders;
     Scene scene;
@@ -28,7 +30,7 @@ typedef struct App {
     float last_x, last_y;
 
     // buffered data for loop
-    mat4 mat4buf, projection;
+    mat4 mat4buf, projection, last_camera;
     vec4 vec4buf;
 } App;
 

@@ -9,11 +9,12 @@ void camera_get_direction(Camera* camera, vec4 dest) {
     glm_mat4_mulv(matrix, CAMERA_DIRECTION, dest);
 }
 
-void camera_get_mat4(Camera* camera, mat4 dest) {
-    glm_rotate_make(dest, camera->rotation[0], GLM_XUP);
-    glm_rotate(dest, camera->rotation[1], GLM_YUP);
-    glm_rotate(dest, camera->rotation[2], GLM_ZUP);
-    glm_translate(dest, camera->position);
+void camera_get_mat4(void *camera, mat4 dest) {
+    Camera *cam = (Camera*)camera;
+    glm_rotate_make(dest, cam->rotation[0], GLM_XUP);
+    glm_rotate(dest, cam->rotation[1], GLM_YUP);
+    glm_rotate(dest, cam->rotation[2], GLM_ZUP);
+    glm_translate(dest, cam->position);
 }
 
 void camera_get_position_transformable(void* camera, vec4 **position) {

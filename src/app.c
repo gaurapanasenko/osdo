@@ -41,6 +41,7 @@ int app_init(void) {
     glfwSetCursorPosCallback(window, app_mouse);
     glfwSetKeyCallback(window, app_key);
 
+    utarray_new(app.bmeshes, &bmesh_icd);
     app.meshes = NULL;
     app.shaders = NULL;
     app.window = window;
@@ -64,16 +65,19 @@ int app_init(void) {
             || !app_load_shader("nuklear"))
         return -1;
 
-    BMesh bmesh;
-    bmesh_init(&bmesh, "test");
-
     // load meshes
     // -----------
     Mesh *mesh = malloc(sizeof(Mesh));
     Mesh *mesh2 = malloc(sizeof(Mesh));
-    bmesh_generate(&bmesh, mesh, mesh2);
-    //mesh_init(mesh, "cube");
+    mesh_init(mesh, "test");
+    mesh_init(mesh2, "test_skel");
     HASH_ADD_STR(app.meshes, name, mesh);
+    HASH_ADD_STR(app.meshes, name, mesh2);
+
+    BMesh bmesh;
+    bmesh_init(&bmesh, "test", mesh, mesh2);
+    bmesh_generate(&bmesh);
+    utarray_push_back(app.bmeshes, &bmesh);
 
     // load objects
     // ------------
@@ -218,18 +222,39 @@ int app_loop(void) {
         }
         nk_end(ctx);
 
-        if (false) {
-            if (nk_begin(ctx, "Vertex 1", nk_rect(267, 4, 256, 128),
+        if (scene->active) {
+            BMesh *bmesh = (void*)utarray_eltptr(
+                         app.bmeshes, (unsigned)scene->active - 1);
+            if (nk_begin(ctx, "Bezier mesh", nk_rect(267, 4, 256, 512),
                          NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
                          NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
-                Object * obj = (Object*) object;
-                nk_layout_row_dynamic(ctx, 25, 3);
-                nk_property_float(ctx, "#X:", -FLT_MAX, obj->mesh->vertices->position,
-                                  FLT_MAX, 0.1f, 0.1f);
-                nk_property_float(ctx, "#Y:", -FLT_MAX, obj->mesh->vertices->position + 1,
-                                  FLT_MAX, 0.1f, 0.1f);
-                nk_property_float(ctx, "#Z:", -FLT_MAX, obj->mesh->vertices->position + 2,
-                                  FLT_MAX, 0.1f, 0.1f);
+                nk_layout_row_dynamic(ctx, 25, 1);
+                if (nk_button_label(ctx, "Regenerate"))
+                    bmesh_generate(bmesh);
+                nk_layout_row_dynamic(ctx, 25, 1);
+                nk_label(ctx, "Control points:", NK_TEXT_LEFT);
+                for (size_t i = 0; i < bmesh->points_size; i++) {
+                    nk_layout_row_dynamic(ctx, 25, 3);
+                    nk_property_float(ctx, "#X:", -FLT_MAX, bmesh->points[i],
+                                      FLT_MAX, 0.1f, 0.1f);
+                    nk_property_float(ctx, "#Y:", -FLT_MAX, bmesh->points[i] + 1,
+                                      FLT_MAX, 0.1f, 0.1f);
+                    nk_property_float(ctx, "#Z:", -FLT_MAX, bmesh->points[i] + 2,
+                                      FLT_MAX, 0.1f, 0.1f);
+                }
+                nk_layout_row_dynamic(ctx, 25, 1);
+                nk_label(ctx, "Surfaces:", NK_TEXT_LEFT);
+                for (size_t i = 0; i < bmesh->surfaces_size; i++) {
+                    for (size_t j = 0; j < 4; j++) {
+                        nk_layout_row_dynamic(ctx, 25, 4);
+                        for (size_t k = 0; k < 4; k++) {
+                            nk_property_int(ctx, "#", 0, (int*)(bmesh->surfaces[i][j] + k),
+                                              100, 1, 1);
+                        }
+                    }
+                    nk_layout_row_dynamic(ctx, 25, 1);
+                    nk_label(ctx, "---", NK_TEXT_LEFT);
+                }
             }
             nk_end(ctx);
         }
@@ -270,8 +295,8 @@ int app_loop(void) {
         shader_set_mat4(sh, "projection", app.projection);
 
         // camera/view transformation
-        camera_get_mat4(&app.camera, app.mat4buf);
-        shader_set_mat4(sh, "camera", app.mat4buf);
+        camera_get_mat4((void*)&app.camera, app.last_camera);
+        shader_set_mat4(sh, "camera", app.last_camera);
 
         trans->rotate_all(object, rotation);
 
@@ -346,6 +371,34 @@ void app_char_callback(
 
 void app_mouse_button_callback(
         UNUSED GLFWwindow *window, int button, int action, int mods) {
+    Scene *scene = &app.scene;
+    BMesh *bmesh;
+    mat4 ortho = {
+        {2.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f,-2.0f, 0.0f, 0.0f},
+        {0.0f, 0.0f,-1.0f, 0.0f},
+        {-1.0f,1.0f, 0.0f, 1.0f},
+    };
+    ortho[0][0] *= (GLfloat)app.width;
+    ortho[1][1] *= (GLfloat)app.height;
+    bmesh = (void*)utarray_eltptr(
+                 app.bmeshes, 0);
+    vec4 cp;
+    mat4 model;
+    object_get_mat4((void*)utarray_eltptr(app.objects, 0), model);
+    glm_mat4_mul(app.last_camera, model, model);
+    //glm_mat4_mul(ortho, model, model);
+    for (size_t i = 0; i < bmesh->points_size; i++) {
+        glm_mat4_mulv(model, bmesh->points[i], cp);
+        printf("%f %f %f\n", cp[0], cp[1], cp[2]);
+    }
+    if (action == GLFW_PRESS) {
+        switch (button) {
+        case GLFW_MOUSE_BUTTON_LEFT:
+            printf("%f %f\n", app.last_x, app.last_y);
+            break;
+        }
+    }
     nk_glfw_mouse_button_callback(
                 &app.nkglfw, &app, button, action, mods);
 }

@@ -24,6 +24,7 @@ void object_init_empty(void *object);
 void object_draw(Object *object, mat4 mat4buf, GLdouble delta_time);
 
 void object_get_position_transformable(void* object, vec4 **position);
+void object_get_mat4(void* object, mat4 dest);
 
 void object_translate(Object* object, vec3 distances);
 void object_translate_transformable(
@@ -48,6 +49,7 @@ void object_set_animation(
     GLM_VEC3_ZERO_INIT, mesh, mesh_skel, shader,\
     {\
         object_get_position_transformable,\
+        object_get_mat4,\
         object_translate_transformable,\
         object_rotate_transformable,\
         object_rotate_all_transformable,\

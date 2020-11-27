@@ -3,7 +3,9 @@
 
 #define BMESH_PATH RES_DIR"/%s.odom"
 
-bool bmesh_init(BMesh *bmesh, const char *name) {
+bool bmesh_init(BMesh *bmesh, const char *name, Mesh *mesh, Mesh *mesh_skel) {
+    bmesh->mesh = mesh;
+    bmesh->mesh_skel = mesh_skel;
     const size_t path_len = strlen(BMESH_PATH);
     const size_t len = strlen(name);
     strcpy(bmesh->name, name);
@@ -76,7 +78,8 @@ void bezier(float a, vec4 p1, vec4 p2, vec4 p3, vec4 p4, vec4 dest) {
     part(a, ppp1, ppp2, dest);
 }
 
-bool bmesh_generate(BMesh *bmesh, Mesh *mesh, Mesh *mesh_skel) {
+bool bmesh_generate(BMesh *bmesh) {
+    Mesh *mesh = bmesh->mesh, *mesh_skel = bmesh->mesh_skel;
     //const size_t size_name = strlen(bmesh->name);
     strcpy(bmesh->name, mesh->name);
     //strcpy(bmesh->name, mesh_skel->name);
@@ -160,7 +163,7 @@ bool bmesh_generate(BMesh *bmesh, Mesh *mesh, Mesh *mesh_skel) {
         verts2++;
             }
     }
-    mesh_subinit(mesh, sizei, sizei, V, E);
-    mesh_subinit(mesh_skel, sizei, sizei, V2, E2);
+    mesh_update(mesh, sizei, sizei, V, E);
+    mesh_update(mesh_skel, sizei, sizei, V2, E2);
     return true;
 }

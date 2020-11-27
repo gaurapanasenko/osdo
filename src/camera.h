@@ -17,7 +17,7 @@ typedef struct Camera {
 } Camera;
 
 void camera_get_direction(Camera* camera, vec4 dest);
-void camera_get_mat4(Camera* camera, mat4 dest);
+void camera_get_mat4(void* camera, mat4 dest);
 void camera_get_position_transformable(
         void* camera, vec4 **position);
 
@@ -40,6 +40,7 @@ void camera_set_animation(void* camera, vec3 angles, float delta_time);
     GLM_VEC3_ZERO_INIT,\
     {\
         camera_get_position_transformable,\
+        camera_get_mat4,\
         camera_translate_transformable,\
         camera_rotate_transformable,\
         camera_rotate_all_transformable,\
