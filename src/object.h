@@ -22,6 +22,8 @@ Object object_init(Mesh *mesh, Shader *shader);
 void object_init_empty(void *object);
 void object_draw(Object *object, mat4 mat4buf, GLdouble delta_time);
 
+void object_get_position_transformable(void* object, vec4 **position);
+
 void object_translate(Object* object, vec3 distances);
 void object_translate_transformable(
         void* object, vec3 distances, float delta_time);
@@ -30,11 +32,13 @@ void object_rotate(Object* object, float angle, vec3 axis);
 void object_rotate_all(Object* object, vec3 angles);
 void object_rotate_transformable(
         void* object, vec3 axis, float delta_time);
+void object_rotate_all_transformable(void* object, vec3 angles);
 
 void object_get_position(Object* object, vec4 dest);
 
 void object_animate(Object* object, float step);
-void object_set_animation_transformable(
+void object_get_animation(void* object, vec3 **animation);
+void object_set_animation(
         void* object, vec3 angles, float delta_time);
 
 #define OBJECT_INIT(mesh, shader) {\
@@ -42,9 +46,12 @@ void object_set_animation_transformable(
     GLM_VEC4_BLACK_INIT,\
     GLM_VEC3_ZERO_INIT, mesh, shader,\
     {\
+        object_get_position_transformable,\
         object_translate_transformable,\
         object_rotate_transformable,\
-        object_set_animation_transformable\
+        object_rotate_all_transformable,\
+        object_get_animation,\
+        object_set_animation\
     }}
 #define OBJECT(mesh, shader) ((Object)OBJECT_INIT(mesh, shader))
 

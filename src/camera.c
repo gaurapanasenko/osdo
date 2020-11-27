@@ -16,6 +16,10 @@ void camera_get_mat4(Camera* camera, mat4 dest) {
     glm_translate(dest, camera->position);
 }
 
+void camera_get_position_transformable(void* camera, vec4 **position) {
+    *position = &((Camera*)camera)->position;
+}
+
 void camera_translate(Camera* camera, vec3 distances) {
     glm_vec3_add(camera->position, distances, camera->position);
 }
@@ -49,10 +53,18 @@ void camera_rotate_transformable(
                   axis);
 }
 
-void camera_set_animation_transformable(
+void camera_get_animation(void* camera, vec3 **animation) {
+    *animation = &((Camera*)camera)->animation;
+}
+
+void camera_set_animation(
         void* camera, vec3 angles, float delta_time) {
     vec3 animation;
     glm_vec3_muladds(angles, delta_time, animation);
     glm_vec3_add(((Camera*)camera)->animation, animation,
                  ((Camera*)camera)->animation);
+}
+
+void camera_rotate_all_transformable(void* camera, vec3 angles) {
+    camera_rotate_all((Camera*)camera, angles);
 }

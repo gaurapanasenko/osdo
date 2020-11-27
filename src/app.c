@@ -1,3 +1,4 @@
+#include "float.h"
 #include <GL/glew.h>
 #include "app.h"
 #include "conf.h"
@@ -125,7 +126,12 @@ int app_loop(void) {
     float resolution;
     struct nk_context *ctx = &app.nkglfw.context;
     struct nk_colorf bg;
-    bg.r = 0.10f; bg.g = 0.18f; bg.b = 0.24f; bg.a = 1.0f;
+    bg.r = 0.8f; bg.g = 0.9f; bg.b = 0.8f; bg.a = 1.0f;
+    char text[128];
+    void *object;
+    vec4 *position;
+    vec3 rotation, *animation;
+    Transformable *trans;
 
     // render loop
     // -----------
@@ -142,24 +148,53 @@ int app_loop(void) {
 
         nk_glfw_new_frame(&app.nkglfw, &app);
 
-        /* GUI */
-        if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),
-            NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-            NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
-        {
-            enum {EASY, HARD};
-            static int op = EASY;
-            static int property = 20;
-            nk_layout_row_static(ctx, 30, 80, 1);
-            if (nk_button_label(ctx, "button"))
-                fprintf(stdout, "button pressed\n");
+        if (scene->active)
+            sprintf(text, "Object %zu", scene->active);
+        else sprintf(text, "Camera");
 
-            nk_layout_row_dynamic(ctx, 30, 2);
-            if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
-            if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
+        if (scene->active) {
+            object = (void*)utarray_eltptr(
+                         scene->objects, (unsigned)scene->active - 1);
+            trans = &((Object*)object)->transformable;
+        } else {
+            object = (void*)&app.camera;
+            trans = &((Camera*)object)->transformable;
+        }
+        trans->get_position(object, &position);
+        trans->get_animation(object, &animation);
+        glm_vec3_copy(GLM_VEC3_ZERO, rotation);
+
+        /* GUI */
+        if (nk_begin(ctx, text, nk_rect(4, 4, 256, 512),
+            NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+            NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
+            nk_layout_row_dynamic(ctx, 25, 1);
+            nk_label(ctx, "Position:", NK_TEXT_LEFT);
+            nk_layout_row_dynamic(ctx, 25, 3);
+            nk_property_float(ctx, "#X:", -FLT_MAX, *position,
+                              FLT_MAX, 0.1f, 0.1f);
+            nk_property_float(ctx, "#Y:", -FLT_MAX, *position + 1,
+                              FLT_MAX, 0.1f, 0.1f);
+            nk_property_float(ctx, "#Z:", -FLT_MAX, *position + 2,
+                              FLT_MAX, 0.1f, 0.1f);
 
             nk_layout_row_dynamic(ctx, 25, 1);
-            nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
+            nk_label(ctx, "Rotation:", NK_TEXT_LEFT);
+            nk_layout_row_dynamic(ctx, 25, 3);
+            nk_property_float(ctx, "#X:", -FLT_MAX, rotation,
+                              FLT_MAX, 0.1f, 0.1f);
+            nk_property_float(ctx, "#Y:", -FLT_MAX, rotation + 1,
+                              FLT_MAX, 0.1f, 0.1f);
+            nk_property_float(ctx, "#Z:", -FLT_MAX, rotation + 2,
+                              FLT_MAX, 0.1f, 0.1f);
+            nk_label(ctx, "Animation:", NK_TEXT_LEFT);
+            nk_layout_row_dynamic(ctx, 25, 3);
+            nk_property_float(ctx, "#X:", -FLT_MAX, *animation,
+                              FLT_MAX, 0.1f, 0.1f);
+            nk_property_float(ctx, "#Y:", -FLT_MAX, *animation + 1,
+                              FLT_MAX, 0.1f, 0.1f);
+            nk_property_float(ctx, "#Z:", -FLT_MAX, *animation + 2,
+                              FLT_MAX, 0.1f, 0.1f);
 
             nk_layout_row_dynamic(ctx, 20, 1);
             nk_label(ctx, "background:", NK_TEXT_LEFT);
@@ -177,6 +212,22 @@ int app_loop(void) {
         }
         nk_end(ctx);
 
+        if (false) {
+            if (nk_begin(ctx, "Vertex 1", nk_rect(267, 4, 256, 128),
+                         NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+                         NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
+                Object * obj = (Object*) object;
+                nk_layout_row_dynamic(ctx, 25, 3);
+                nk_property_float(ctx, "#X:", -FLT_MAX, obj->mesh->vertices->position,
+                                  FLT_MAX, 0.1f, 0.1f);
+                nk_property_float(ctx, "#Y:", -FLT_MAX, obj->mesh->vertices->position + 1,
+                                  FLT_MAX, 0.1f, 0.1f);
+                nk_property_float(ctx, "#Z:", -FLT_MAX, obj->mesh->vertices->position + 2,
+                                  FLT_MAX, 0.1f, 0.1f);
+            }
+            nk_end(ctx);
+        }
+
         // per-frame time logic
         // --------------------
         current_time = glfwGetTime();
@@ -192,7 +243,7 @@ int app_loop(void) {
 
         // render
         // ------
-        glClearColor(0.8f, 0.9f, 0.8f, 1.0f);
+        glClearColor(bg.r, bg.g, bg.b, bg.a);
         glClearDepth(1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -208,13 +259,15 @@ int app_loop(void) {
 
         // pass projection matrix to shader
         resolution = (float)app.width / (float)app.height;
-        glm_perspective(45 * M_RAD, resolution, 0.1f, 100.0f,
+        glm_perspective(45.f * (GLfloat) M_RAD, resolution, 0.1f, 100.0f,
                         app.projection);
         shader_set_mat4(sh, "projection", app.projection);
 
         // camera/view transformation
         camera_get_mat4(&app.camera, app.mat4buf);
         shader_set_mat4(sh, "camera", app.mat4buf);
+
+        trans->rotate_all(object, rotation);
 
         // render the loaded models
         for (Object *i = (Object*)utarray_front(scene->objects);

@@ -19,7 +19,7 @@ void mesh_subinit(Mesh *mesh, GLsizei vertices_size, GLsizei indices_size, Verte
     glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
     glBufferData(GL_ARRAY_BUFFER,
                  (size_t)mesh->vertices_size * sizeof(Vertex),
-                 mesh->vertices, GL_STATIC_DRAW);
+                 mesh->vertices, GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,

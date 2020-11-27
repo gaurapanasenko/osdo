@@ -26,6 +26,10 @@ void object_draw(Object *object, mat4 mat4buf, GLdouble delta_time) {
         printf("Failed to find mesh.\n");
 }
 
+void object_get_position_transformable(void* object, vec4 **position) {
+    *position = &((Object*)object)->position;
+}
+
 void object_translate(Object* object, vec3 distances) {
     glm_vec3_add(object->position, distances, object->position);
 }
@@ -56,13 +60,21 @@ void object_rotate_transformable(
                   axis);
 }
 
+void object_rotate_all_transformable(void* object, vec3 angles) {
+    object_rotate_all((Object*)object, angles);
+}
+
 void object_animate(Object* object, float step) {
     vec3 animation = GLM_VEC3_ZERO_INIT;
     glm_vec3_muladds(object->animation, step, animation);
     object_rotate_all(object, animation);
 }
 
-void object_set_animation_transformable(
+void object_get_animation(void* object, vec3 **animation) {
+    *animation = &((Object*)object)->animation;
+}
+
+void object_set_animation(
         void* object, vec3 angles, float delta_time) {
     vec3 animation = GLM_VEC3_ZERO_INIT;
     glm_vec3_muladds(angles, delta_time, animation);
