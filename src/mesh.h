@@ -26,6 +26,8 @@ void mesh_subinit(Mesh* mesh, GLsizei vertices_size, GLsizei indices_size,
 
 void mesh_init(Mesh* mesh, const char * name);
 
+void mesh_update(Mesh* mesh);
+
 void mesh_draw(Mesh *mesh);
 
 void mesh_del(Mesh* mesh);

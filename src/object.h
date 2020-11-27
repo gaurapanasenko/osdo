@@ -14,11 +14,12 @@ typedef struct Object {
     vec4 position;
     vec3 animation;
     Mesh *mesh;
+    Mesh *mesh_skel;
     Shader *shader;
     Transformable transformable;
 } Object;
 
-Object object_init(Mesh *mesh, Shader *shader);
+Object object_init(Mesh *mesh, Mesh *mesh_skel, Shader *shader);
 void object_init_empty(void *object);
 void object_draw(Object *object, mat4 mat4buf, GLdouble delta_time);
 
@@ -41,10 +42,10 @@ void object_get_animation(void* object, vec3 **animation);
 void object_set_animation(
         void* object, vec3 angles, float delta_time);
 
-#define OBJECT_INIT(mesh, shader) {\
+#define OBJECT_INIT(mesh, mesh_skel, shader) {\
     GLM_MAT4_IDENTITY_INIT,\
     GLM_VEC4_BLACK_INIT,\
-    GLM_VEC3_ZERO_INIT, mesh, shader,\
+    GLM_VEC3_ZERO_INIT, mesh, mesh_skel, shader,\
     {\
         object_get_position_transformable,\
         object_translate_transformable,\
@@ -53,10 +54,10 @@ void object_set_animation(
         object_get_animation,\
         object_set_animation\
     }}
-#define OBJECT(mesh, shader) ((Object)OBJECT_INIT(mesh, shader))
+#define OBJECT(mesh, mesh_skel, shader) ((Object)OBJECT_INIT(mesh, mesh_skel, shader))
 
-#define OBJECT_INIT_EMPTY OBJECT_INIT(NULL, NULL)
-#define OBJECT_EMPTY OBJECT(NULL, NULL)
+#define OBJECT_INIT_EMPTY OBJECT_INIT(NULL, NULL, NULL)
+#define OBJECT_EMPTY OBJECT(NULL, NULL, NULL)
 
 static const UT_icd object_icd = {
     sizeof(Object), object_init_empty, NULL, NULL

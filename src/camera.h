@@ -48,6 +48,6 @@ void camera_set_animation(void* camera, vec3 angles, float delta_time);
     }}
 #define CAMERA ((Camera)CAMERA_INIT)
 
-#define OBJECT_INIT_EMPTY OBJECT_INIT(NULL, NULL)
+#define CAMERAINIT_EMPTY CAMERA_INIT(NULL, NULL)
 
 #endif // CAMERA_H

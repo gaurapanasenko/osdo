@@ -3,6 +3,7 @@
 #include "app.h"
 #include "conf.h"
 #include "shader.h"
+#include "bmesh.h"
 
 static App app;
 
@@ -63,10 +64,15 @@ int app_init(void) {
             || !app_load_shader("nuklear"))
         return -1;
 
+    BMesh bmesh;
+    bmesh_init(&bmesh, "test");
+
     // load meshes
     // -----------
     Mesh *mesh = malloc(sizeof(Mesh));
-    mesh_init(mesh, "cube");
+    Mesh *mesh2 = malloc(sizeof(Mesh));
+    bmesh_generate(&bmesh, mesh, mesh2);
+    //mesh_init(mesh, "cube");
     HASH_ADD_STR(app.meshes, name, mesh);
 
     // load objects
@@ -76,7 +82,7 @@ int app_init(void) {
     if (shader == NULL)
         return -1;
     Object object;
-    object = object_init(mesh, shader);
+    object = object_init(mesh, mesh2, shader);
     utarray_push_back(app.objects, &object);
 
     scene_init(&app.scene, app.objects);

@@ -13,18 +13,9 @@ void mesh_subinit(Mesh *mesh, GLsizei vertices_size, GLsizei indices_size, Verte
     glGenVertexArrays(1, &mesh->vao);
     glGenBuffers(1, &mesh->vbo);
     glGenBuffers(1, &mesh->ebo);
-
     glBindVertexArray(mesh->vao);
-    // load data into vertex buffers
     glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-    glBufferData(GL_ARRAY_BUFFER,
-                 (size_t)mesh->vertices_size * sizeof(Vertex),
-                 mesh->vertices, GL_DYNAMIC_DRAW);
-
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 (size_t)mesh->indices_size * sizeof(GLuint),
-                 mesh->indices, GL_STATIC_DRAW);
 
     // set the vertex attribute pointers
     // vertex Positions
@@ -48,6 +39,27 @@ void mesh_subinit(Mesh *mesh, GLsizei vertices_size, GLsizei indices_size, Verte
                           (void*)offsetof(Vertex, uv));
 
     glBindVertexArray(0);
+
+    mesh_update(mesh);
+}
+
+void mesh_update(Mesh* mesh) {
+    if (mesh->vertices == NULL || mesh->indices == NULL)
+        return;
+
+    glBindVertexArray(mesh->vao);
+    // load data into vertex buffers
+    glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
+    glBufferData(GL_ARRAY_BUFFER,
+                 (size_t)mesh->vertices_size * sizeof(Vertex),
+                 mesh->vertices, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 (size_t)mesh->indices_size * sizeof(GLuint),
+                 mesh->indices, GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
 }
 
 void mesh_init(Mesh* mesh, const char *name) {
@@ -68,9 +80,19 @@ void mesh_draw(Mesh *mesh) {
 }
 
 void mesh_del(Mesh *mesh) {
-    glDeleteVertexArrays(1, &mesh->vao);
-    glDeleteBuffers(1, &mesh->vbo);
-    glDeleteBuffers(1, &mesh->ebo);
-    free(mesh->vertices);
-    free(mesh->indices);
+    if (mesh->vertices && mesh->indices) {
+        glDeleteVertexArrays(1, &mesh->vao);
+        glDeleteBuffers(1, &mesh->vbo);
+        glDeleteBuffers(1, &mesh->ebo);
+    }
+    if (mesh->vertices) {
+        free(mesh->vertices);
+        mesh->vertices = NULL;
+    }
+    if (mesh->indices){
+        free(mesh->indices);
+        mesh->indices = NULL;
+    }
+    mesh->vertices_size = 0;
+    mesh->indices_size = 0;
 }
