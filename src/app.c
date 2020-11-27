@@ -149,8 +149,8 @@ int app_loop(void) {
         nk_glfw_new_frame(&app.nkglfw, &app);
 
         if (scene->active)
-            sprintf(text, "Object %zu", scene->active);
-        else sprintf(text, "Camera");
+            snprintf(text, 128, "Object %zu", scene->active);
+        else snprintf(text, 128, "Camera");
 
         if (scene->active) {
             object = (void*)utarray_eltptr(

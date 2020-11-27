@@ -97,8 +97,8 @@ bool shader_init(const char* name, Shader *shader) {
     strcpy(shader->name, name);
     char *vertex_path = calloc(len + path_len, sizeof(char)),
         *fragment_path = calloc(len + path_len, sizeof(char));
-    sprintf(vertex_path, VERTEX_PATH, name);
-    sprintf(fragment_path, FRAGMENT_PATH, name);
+    snprintf(vertex_path, len + path_len, VERTEX_PATH, name);
+    snprintf(fragment_path, len + path_len, FRAGMENT_PATH, name);
     GLchar* vertex = readFromFile(vertex_path);
     if (vertex == NULL) {
         printf("ERROR: failed to read from vertex shader file %s.\n",
