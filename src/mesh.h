@@ -6,9 +6,10 @@
 #include <uthash.h>
 
 typedef struct Vertex {
-    vec3 Position;
-    vec3 Normal;
-    vec3 Color;
+    vec3 position;
+    vec3 normal;
+    unsigned char color[4];
+    vec2 uv;
 } Vertex;
 
 typedef struct Mesh {
@@ -16,14 +17,14 @@ typedef struct Mesh {
     GLsizei vertices_size, indices_size;
     Vertex *vertices;
     GLuint *indices;
-    GLuint VAO, VBO, EBO;
+    GLuint vao, vbo, ebo;
     UT_hash_handle hh;
 } Mesh;
 
 void mesh_subinit(Mesh* mesh, GLsizei vertices_size, GLsizei indices_size,
                   Vertex *vertices, GLuint *indices);
 
-void mesh_init(Mesh* mesh);
+void mesh_init(Mesh* mesh, const char * name);
 
 void mesh_draw(Mesh *mesh);
 

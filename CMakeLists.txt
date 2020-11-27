@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(osdo C)
+project(osdo LANGUAGES C)
 
 ###############################################################################
 ## configuration ##############################################################
@@ -75,7 +75,6 @@ find_library(GLFW_LIBRARY glfw REQUIRED)
 find_file(uthash_INCLUDE_FILE uthash.h REQUIRED)
 
 # Nuklear
-target_precompile_headers(${PROJECT_NAME} PUBLIC nuklear/nuklear.h)
 include_directories(nuklear)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC

@@ -17,8 +17,6 @@ typedef struct Scene {
     bool pointLight1On;
     bool pointLight2On;
     bool spotLightOn;
-
-    GLfloat zoom;
 } Scene;
 
 void scene_init(Scene *scene, UT_array *objects);

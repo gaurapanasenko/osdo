@@ -5,9 +5,14 @@
 
 static App app;
 
+static void error_callback(int e, const char *d) {
+    printf("Error %d: %s\n", e, d);
+}
+
 int app_init(void) {
     // glfw: initialize and configure
     // ------------------------------
+    glfwSetErrorCallback(error_callback);
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -29,6 +34,8 @@ int app_init(void) {
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, app_resize);
     glfwSetScrollCallback(window, app_scroll);
+    glfwSetCharCallback(window, app_char_callback);
+    glfwSetMouseButtonCallback(window, app_mouse_button_callback);
     glfwSetCursorPosCallback(window, app_mouse);
     glfwSetKeyCallback(window, app_key);
 
@@ -37,13 +44,9 @@ int app_init(void) {
     app.window = window;
     utarray_new(app.objects, &object_icd);
     app.camera = CAMERA;
-    app.screen_width = SCR_WIDTH;
-    app.screen_width = SCR_HEIGHT;
+    app.width = SCR_WIDTH;
+    app.width = SCR_HEIGHT;
     app.mouse_capute = false;
-
-    // configure global opengl state
-    // -----------------------------
-    glEnable(GL_DEPTH_TEST);
 
     // load glew
     // ---------
@@ -55,19 +58,20 @@ int app_init(void) {
 
     // build and compile our shader zprogram
     // -------------------------------------
-    if (!app_load_shader("lightless"))
+    if (!app_load_shader("simple") || !app_load_shader("textured")
+            || !app_load_shader("nuklear"))
         return -1;
 
     // load meshes
     // -----------
     Mesh *mesh = malloc(sizeof(Mesh));
-    mesh_init(mesh);
+    mesh_init(mesh, "cube");
     HASH_ADD_STR(app.meshes, name, mesh);
 
     // load objects
     // ------------
     Shader *shader;
-    HASH_FIND_STR(app.shaders, "lightless", shader);
+    HASH_FIND_STR(app.shaders, "simple", shader);
     if (shader == NULL)
         return -1;
     Object object;
@@ -77,10 +81,17 @@ int app_init(void) {
     scene_init(&app.scene, app.objects);
     camera_translate(&app.camera, BASIS0POS);
 
+    mesh = malloc(sizeof(Mesh));
+    mesh_init(mesh, "nuklear");
+    HASH_ADD_STR(app.meshes, name, mesh);
+    HASH_FIND_STR(app.shaders, "nuklear", shader);
+    nk_glfw_init(&app.nkglfw, &app, mesh, shader);
+
     return 0;
 }
 
 void app_del(void) {
+    nk_glfw_del(&app.nkglfw);
     utarray_free(app.objects);
 
     {Shader *i, *tmp;
@@ -110,13 +121,61 @@ int app_loop(void) {
     int nb_frames = 0;
     Scene* scene = &app.scene;
     Shader *sh;
-    HASH_FIND_STR(app.shaders, "lightless", sh);
+    HASH_FIND_STR(app.shaders, "simple", sh);
     float resolution;
+    struct nk_context *ctx = &app.nkglfw.context;
+    struct nk_colorf bg;
+    bg.r = 0.10f; bg.g = 0.18f; bg.b = 0.24f; bg.a = 1.0f;
 
     // render loop
     // -----------
     while(!app_should_closed()) {
         glfwPollEvents();
+
+        glfwGetWindowSize(app.window, &app.width, &app.height);
+        glfwGetFramebufferSize(app.window, &app.display_width,
+                               &app.display_height);
+        app.framebuffer_scale[0] =
+                (float)app.display_width / (float)app.width;
+        app.framebuffer_scale[1] =
+                (float)app.display_height / (float)app.height;
+
+        nk_glfw_new_frame(&app.nkglfw, &app);
+
+        /* GUI */
+        if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),
+            NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+            NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
+        {
+            enum {EASY, HARD};
+            static int op = EASY;
+            static int property = 20;
+            nk_layout_row_static(ctx, 30, 80, 1);
+            if (nk_button_label(ctx, "button"))
+                fprintf(stdout, "button pressed\n");
+
+            nk_layout_row_dynamic(ctx, 30, 2);
+            if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
+            if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
+
+            nk_layout_row_dynamic(ctx, 25, 1);
+            nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
+
+            nk_layout_row_dynamic(ctx, 20, 1);
+            nk_label(ctx, "background:", NK_TEXT_LEFT);
+            nk_layout_row_dynamic(ctx, 25, 1);
+            if (nk_combo_begin_color(ctx, nk_rgb_cf(bg), nk_vec2(nk_widget_width(ctx),400))) {
+                nk_layout_row_dynamic(ctx, 120, 1);
+                bg = nk_color_picker(ctx, bg, NK_RGBA);
+                nk_layout_row_dynamic(ctx, 25, 1);
+                bg.r = nk_propertyf(ctx, "#R:", 0, bg.r, 1.0f, 0.01f,0.005f);
+                bg.g = nk_propertyf(ctx, "#G:", 0, bg.g, 1.0f, 0.01f,0.005f);
+                bg.b = nk_propertyf(ctx, "#B:", 0, bg.b, 1.0f, 0.01f,0.005f);
+                bg.a = nk_propertyf(ctx, "#A:", 0, bg.a, 1.0f, 0.01f,0.005f);
+                nk_combo_end(ctx);
+            }
+        }
+        nk_end(ctx);
 
         // per-frame time logic
         // --------------------
@@ -141,12 +200,16 @@ int app_loop(void) {
         // -----
         app_process_input();
 
+        // configure global opengl state
+        // -----------------------------
+        glEnable(GL_DEPTH_TEST);
+
         shader_use(sh);
 
         // pass projection matrix to shader
-        resolution = (float)app.screen_width / (float)app.screen_height;
-        glm_perspective(scene->zoom, resolution,
-                        0.1f, 100.0f, app.projection);
+        resolution = (float)app.width / (float)app.height;
+        glm_perspective(45 * M_RAD, resolution, 0.1f, 100.0f,
+                        app.projection);
         shader_set_mat4(sh, "projection", app.projection);
 
         // camera/view transformation
@@ -156,8 +219,11 @@ int app_loop(void) {
         // render the loaded models
         for (Object *i = (Object*)utarray_front(scene->objects);
              i != NULL; i = (Object*)utarray_next(scene->objects, i)) {
-            object_draw(&app, i);
+            object_draw(i, app.mat4buf, app.delta_time);
         }
+
+        nk_glfw_render(&app.nkglfw, &app, NK_ANTI_ALIASING_ON,
+                       MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
 
         // glfw: swap buffers and poll IO events
         // -------------------------------------
@@ -189,20 +255,14 @@ void app_resize(GLFWwindow* window, GLint width, GLint height) {
     // than specified on retina displays.
     glfwMakeContextCurrent(window);
     glViewport(0, 0, width, height);
-    app.screen_width = width; app.screen_height = height;
+    app.width = width; app.height = height;
 }
 
 // glfw: when the mouse scroll wheel scrolls, this callback is called
 // ------------------------------------------------------------------
 void app_scroll(UNUSED GLFWwindow* window, UNUSED GLdouble xoffset,
                 GLdouble yoffset) {
-    GLfloat *zoom = &app.scene.zoom;
-    if (*zoom >= 0.0f && *zoom <= (float)M_PI / 4)
-        *zoom -= (float)yoffset;
-    if (*zoom <= 0.0f)
-        *zoom = 0.0f;
-    if (*zoom >= (float)M_PI / 4)
-        *zoom = (float)M_PI / 4;
+    nk_gflw_scroll_callback(&app.nkglfw, xoffset, yoffset);
 }
 
 void app_mouse(UNUSED GLFWwindow* window, double xpos, double ypos) {
@@ -218,6 +278,17 @@ void app_mouse(UNUSED GLFWwindow* window, double xpos, double ypos) {
         camera_rotate(&app.camera, xoffset, GLM_YUP);
         camera_rotate(&app.camera, yoffset, GLM_XUP);
     }
+}
+
+void app_char_callback(
+        UNUSED GLFWwindow* window, unsigned int codepoint) {
+    nk_glfw_char_callback(&app.nkglfw, codepoint);
+}
+
+void app_mouse_button_callback(
+        UNUSED GLFWwindow *window, int button, int action, int mods) {
+    nk_glfw_mouse_button_callback(
+                &app.nkglfw, &app, button, action, mods);
 }
 
 // glfw: when the keyboard was used, this callback is called

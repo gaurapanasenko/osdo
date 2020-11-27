@@ -13,13 +13,13 @@ void object_init_empty(void *object) {
     *((Object*)object) = OBJECT_EMPTY;
 }
 
-void object_draw(App *app, Object *object) {
+void object_draw(Object *object, mat4 mat4buf, GLdouble delta_time) {
     // render the loaded model
     Mesh *mesh = object->mesh;
-    object_animate(object, (GLfloat)app->delta_time);
-    glm_translate_make(app->mat4buf, object->position);
-    glm_mat4_mul(app->mat4buf, object->transform, app->mat4buf);
-    shader_set_mat4(object->shader, "model", app->mat4buf);
+    object_animate(object, (GLfloat)delta_time);
+    glm_translate_make(mat4buf, object->position);
+    glm_mat4_mul(mat4buf, object->transform, mat4buf);
+    shader_set_mat4(object->shader, "model", mat4buf);
     if (mesh)
         mesh_draw(mesh);
     else

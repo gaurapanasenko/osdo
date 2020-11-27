@@ -9,8 +9,6 @@
 #include "mesh.h"
 #include "shader.h"
 
-struct App;
-
 typedef struct Object {
     mat4 transform;
     vec4 position;
@@ -22,7 +20,7 @@ typedef struct Object {
 
 Object object_init(Mesh *mesh, Shader *shader);
 void object_init_empty(void *object);
-void object_draw(struct App *app, Object *object);
+void object_draw(Object *object, mat4 mat4buf, GLdouble delta_time);
 
 void object_translate(Object* object, vec3 distances);
 void object_translate_transformable(

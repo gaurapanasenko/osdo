@@ -7,6 +7,7 @@
 #include "scene.h"
 #include "camera.h"
 #include "utarray.h"
+#include "nkglfw.h"
 
 typedef struct App {
     Mesh *meshes;
@@ -15,12 +16,14 @@ typedef struct App {
     GLFWwindow *window;
     UT_array *objects;
     Camera camera;
+    NkGlfw nkglfw;
 
     // timing
     GLdouble delta_time;
 
     // screen size
-    int screen_width, screen_height;
+    GLint width, height, display_width, display_height;
+    vec2 framebuffer_scale;
     bool mouse_capute;
     float last_x, last_y;
 
@@ -50,6 +53,10 @@ void app_scroll(GLFWwindow* window, GLdouble xoffset,
                   GLdouble yoffset);
 
 void app_mouse(GLFWwindow* window, double xpos, double ypos);
+
+void app_char_callback(GLFWwindow* window, unsigned int codepoint);
+void app_mouse_button_callback(
+        GLFWwindow *window, int button, int action, int mods);
 
 // glfw: when the keyboard was used, this callback is called
 // ------------------------------------------------------------------
