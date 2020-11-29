@@ -1,6 +1,7 @@
 #ifndef CONF_H
 #define CONF_H
 
+#include "osdo.h"
 #include "mesh.h"
 
 #define M_PI 3.14159265358979323846

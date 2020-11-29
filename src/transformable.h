@@ -1,7 +1,7 @@
 #ifndef TRANSFORMABLE_H
 #define TRANSFORMABLE_H
 
-#include <cglm/cglm.h>
+#include "osdo.h"
 
 typedef void (*get_position_cb)(void* object, vec4 **position);
 typedef void (*get_mat4_cb)(void* object, mat4 matrix);

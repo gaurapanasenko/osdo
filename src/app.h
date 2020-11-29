@@ -1,72 +1,48 @@
 #ifndef APP_H
 #define APP_H
-#include <GLFW/glfw3.h>
+
+#include "osdo.h"
 #include "conf.h"
+
 #include "shader.h"
 #include "mesh.h"
 #include "scene.h"
 #include "camera.h"
-#include "utarray.h"
 #include "nkglfw.h"
-#include "bmesh.h"
+#include "model.h"
+#include "window.h"
 
 typedef struct App {
-    UT_array *bmeshes;
-    Mesh *meshes;
+    Model *models;
     Shader *shaders;
     Scene scene;
-    GLFWwindow *window;
     UT_array *objects;
     Camera camera;
     NkGlfw nkglfw;
-
-    // timing
-    GLdouble delta_time;
-
-    // screen size
-    GLint width, height, display_width, display_height;
-    vec2 framebuffer_scale;
-    bool mouse_capute;
-    float last_x, last_y;
+    Window window;
 
     // buffered data for loop
     mat4 mat4buf, projection, last_camera;
     vec4 vec4buf;
 } App;
 
-int app_init(void);
+int app_init(App *app);
 
-void app_del(void);
+void app_del(App *app);
 
-int app_loop(void);
+int app_loop(App *app);
 
-bool app_load_shader(const char *name);
+bool app_load_shader(App *app, const char *name);
 
-bool app_should_closed(void);
-
-// glfw: when the window size changed this callback function executes
-// ------------------------------------------------------------------
-void app_resize(GLFWwindow* window, GLint width,
-                  GLint height);
-
-// glfw: when the mouse scroll wheel scrolls, this callback is called
-// ------------------------------------------------------------------
-void app_scroll(GLFWwindow* window, GLdouble xoffset,
-                  GLdouble yoffset);
-
-void app_mouse(GLFWwindow* window, double xpos, double ypos);
-
-void app_char_callback(GLFWwindow* window, unsigned int codepoint);
+void app_scroll(Window* window, GLdouble xoffset, GLdouble yoffset);
+void app_mouse(Window* window, int offset[2]);
+void app_char_callback(Window* window, unsigned int codepoint);
 void app_mouse_button_callback(
-        GLFWwindow *window, int button, int action, int mods);
-
-// glfw: when the keyboard was used, this callback is called
-// ------------------------------------------------------------------
-void app_key(GLFWwindow* window, int key, int scancode,
-               int action, int mods);
+        Window *window, enum BUTTONS button, bool pressed);
+void app_key(Window* window, enum KEYS key, bool pressed);
 
 // process all input
 // -----------------
-void app_process_input(void);
+void app_process_input(App *app);
 
 #endif // APP_H

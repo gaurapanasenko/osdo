@@ -1,140 +1,77 @@
 #include "float.h"
-#include <GL/glew.h>
 #include "app.h"
 #include "conf.h"
 #include "shader.h"
-#include "bmesh.h"
+#include "model.h"
 
-static App app;
+int app_init(App *app) {
+    app->models = NULL;
+    app->shaders = NULL;
+    window_init(&app->window);
+    utarray_new(app->objects, &object_icd);
+    app->camera = CAMERA;
 
-static void error_callback(int e, const char *d) {
-    printf("Error %d: %s\n", e, d);
-}
-
-int app_init(void) {
-    // glfw: initialize and configure
-    // ------------------------------
-    glfwSetErrorCallback(error_callback);
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-    // glfw window creation
-    // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "osdo",
-                                          NULL, NULL);
-    if (window == NULL) {
-        printf("Failed to create GLFW window\n");
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, app_resize);
-    glfwSetScrollCallback(window, app_scroll);
-    glfwSetCharCallback(window, app_char_callback);
-    glfwSetMouseButtonCallback(window, app_mouse_button_callback);
-    glfwSetCursorPosCallback(window, app_mouse);
-    glfwSetKeyCallback(window, app_key);
-
-    utarray_new(app.bmeshes, &bmesh_icd);
-    app.meshes = NULL;
-    app.shaders = NULL;
-    app.window = window;
-    utarray_new(app.objects, &object_icd);
-    app.camera = CAMERA;
-    app.width = SCR_WIDTH;
-    app.width = SCR_HEIGHT;
-    app.mouse_capute = false;
-
-    // load glew
-    // ---------
-    glewExperimental = GL_TRUE;
-    if (glewInit() != GLEW_OK) {
-        printf("Failed to initialize GLEW\n");
-        return -1;
-    }
+    window_set_user_pointer(&app->window, app);
+    window_set_scroll_cb(&app->window, app_scroll);
+    window_set_mouse_motion_cb(&app->window, app_mouse);
+    window_set_char_cb(&app->window, app_char_callback);
+    window_set_mouse_button_cb(&app->window, app_mouse_button_callback);
+    window_set_key_cb(&app->window, app_key);
 
     // build and compile our shader zprogram
     // -------------------------------------
-    if (!app_load_shader("simple") || !app_load_shader("textured")
-            || !app_load_shader("nuklear"))
+    if (!app_load_shader(app, "simple") ||
+            !app_load_shader(app, "textured") ||
+            !app_load_shader(app, "nuklear"))
         return -1;
 
-    // load meshes
-    // -----------
-    Mesh *mesh = malloc(sizeof(Mesh));
-    Mesh *mesh2 = malloc(sizeof(Mesh));
-    mesh_init(mesh, "test");
-    mesh_init(mesh2, "test_skel");
-    HASH_ADD_STR(app.meshes, name, mesh);
-    HASH_ADD_STR(app.meshes, name, mesh2);
-
-    BMesh bmesh;
-    bmesh_init(&bmesh, "test", mesh, mesh2);
-    bmesh_generate(&bmesh);
-    utarray_push_back(app.bmeshes, &bmesh);
+    Model *model = malloc(sizeof(Model));
+    model_init(model, "test");
+    model_generate(model);
+    HASH_ADD_STR(app->models, name, model);
 
     // load objects
     // ------------
     Shader *shader;
-    HASH_FIND_STR(app.shaders, "simple", shader);
+    HASH_FIND_STR(app->shaders, "simple", shader);
     if (shader == NULL)
         return -1;
     Object object;
-    object = object_init(mesh, mesh2, shader);
-    utarray_push_back(app.objects, &object);
+    object_init(&object, model, shader);
+    utarray_push_back(app->objects, &object);
 
-    scene_init(&app.scene, app.objects);
-    camera_translate(&app.camera, BASIS0POS);
+    scene_init(&app->scene, app->objects);
+    camera_translate(&app->camera, BASIS0POS);
 
-    mesh = malloc(sizeof(Mesh));
-    mesh_init(mesh, "nuklear");
-    HASH_ADD_STR(app.meshes, name, mesh);
-    HASH_FIND_STR(app.shaders, "nuklear", shader);
-    nk_glfw_init(&app.nkglfw, &app, mesh, shader);
+    HASH_FIND_STR(app->shaders, "nuklear", shader);
+    nk_glfw_init(&app->nkglfw, &app->window, shader);
 
     return 0;
 }
 
-void app_del(void) {
-    nk_glfw_del(&app.nkglfw);
-    utarray_free(app.objects);
+void app_del(App *app) {
+    nk_glfw_del(&app->nkglfw);
+    scene_del(&app->scene);
+    utarray_free(app->objects);
+
+    {Model *i, *tmp;
+    HASH_ITER(hh, app->models, i, tmp) {
+        model_del(i);
+        free(i);
+    }}
 
     {Shader *i, *tmp;
-    HASH_ITER(hh, app.shaders, i, tmp) {
+    HASH_ITER(hh, app->shaders, i, tmp) {
         shader_del(i);
         free(i);
     }}
-
-    {Mesh *i, *tmp;
-    HASH_ITER(hh, app.meshes, i, tmp) {
-        mesh_del(i);
-        free(i);
-    }}
-
-    // glfw: terminate, clearing all previously allocated GLFW resources
-    // -----------------------------------------------------------------
-    glfwTerminate();
 }
 
-int app_loop(void) {
-    const int status = app_init();
-    if (status)
-        return status;
-
-    double current_time, last_time = glfwGetTime(),
-            next_time = glfwGetTime();
-    int nb_frames = 0;
-    Scene* scene = &app.scene;
+int app_loop(App *app) {
+    Scene* scene = &app->scene;
     Shader *sh;
-    HASH_FIND_STR(app.shaders, "simple", sh);
-    float resolution;
-    struct nk_context *ctx = &app.nkglfw.context;
+    HASH_FIND_STR(app->shaders, "simple", sh);
+    struct nk_context *ctx = &app->nkglfw.context;
     struct nk_colorf bg;
     bg.r = 0.8f; bg.g = 0.9f; bg.b = 0.8f; bg.a = 1.0f;
     char text[128];
@@ -145,18 +82,8 @@ int app_loop(void) {
 
     // render loop
     // -----------
-    while(!app_should_closed()) {
-        glfwPollEvents();
-
-        glfwGetWindowSize(app.window, &app.width, &app.height);
-        glfwGetFramebufferSize(app.window, &app.display_width,
-                               &app.display_height);
-        app.framebuffer_scale[0] =
-                (float)app.display_width / (float)app.width;
-        app.framebuffer_scale[1] =
-                (float)app.display_height / (float)app.height;
-
-        nk_glfw_new_frame(&app.nkglfw, &app);
+    while(window_pre_loop(&app->window)) {
+        nk_glfw_new_frame(&app->nkglfw);
 
         if (scene->active)
             snprintf(text, 128, "Object %zu", scene->active);
@@ -167,7 +94,7 @@ int app_loop(void) {
                          scene->objects, (unsigned)scene->active - 1);
             trans = &((Object*)object)->transformable;
         } else {
-            object = (void*)&app.camera;
+            object = (void*)&app->camera;
             trans = &((Camera*)object)->transformable;
         }
         trans->get_position(object, &position);
@@ -223,32 +150,31 @@ int app_loop(void) {
         nk_end(ctx);
 
         if (scene->active) {
-            BMesh *bmesh = (void*)utarray_eltptr(
-                         app.bmeshes, (unsigned)scene->active - 1);
+            Model *model = app->models;
             if (nk_begin(ctx, "Bezier mesh", nk_rect(267, 4, 256, 512),
                          NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
                          NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
                 nk_layout_row_dynamic(ctx, 25, 1);
                 if (nk_button_label(ctx, "Regenerate"))
-                    bmesh_generate(bmesh);
+                    model_generate(model);
                 nk_layout_row_dynamic(ctx, 25, 1);
                 nk_label(ctx, "Control points:", NK_TEXT_LEFT);
-                for (size_t i = 0; i < bmesh->points_size; i++) {
+                for (size_t i = 0; i < model->points_size; i++) {
                     nk_layout_row_dynamic(ctx, 25, 3);
-                    nk_property_float(ctx, "#X:", -FLT_MAX, bmesh->points[i],
+                    nk_property_float(ctx, "#X:", -FLT_MAX, model->points[i],
                                       FLT_MAX, 0.1f, 0.1f);
-                    nk_property_float(ctx, "#Y:", -FLT_MAX, bmesh->points[i] + 1,
+                    nk_property_float(ctx, "#Y:", -FLT_MAX, model->points[i] + 1,
                                       FLT_MAX, 0.1f, 0.1f);
-                    nk_property_float(ctx, "#Z:", -FLT_MAX, bmesh->points[i] + 2,
+                    nk_property_float(ctx, "#Z:", -FLT_MAX, model->points[i] + 2,
                                       FLT_MAX, 0.1f, 0.1f);
                 }
                 nk_layout_row_dynamic(ctx, 25, 1);
                 nk_label(ctx, "Surfaces:", NK_TEXT_LEFT);
-                for (size_t i = 0; i < bmesh->surfaces_size; i++) {
+                for (size_t i = 0; i < model->surfaces_size; i++) {
                     for (size_t j = 0; j < 4; j++) {
                         nk_layout_row_dynamic(ctx, 25, 4);
                         for (size_t k = 0; k < 4; k++) {
-                            nk_property_int(ctx, "#", 0, (int*)(bmesh->surfaces[i][j] + k),
+                            nk_property_int(ctx, "#", 0, (int*)(model->surfaces[i][j] + k),
                                               100, 1, 1);
                         }
                     }
@@ -259,19 +185,6 @@ int app_loop(void) {
             nk_end(ctx);
         }
 
-        // per-frame time logic
-        // --------------------
-        current_time = glfwGetTime();
-        app.delta_time = current_time - last_time;
-        last_time = current_time;
-
-        nb_frames++;
-        if (current_time - next_time >= 1.0) {
-            printf("%i FPS\n", nb_frames);
-            nb_frames = 0;
-            next_time += 1.0;
-        }
-
         // render
         // ------
         glClearColor(bg.r, bg.g, bg.b, bg.a);
@@ -280,7 +193,7 @@ int app_loop(void) {
 
         // input
         // -----
-        app_process_input();
+        app_process_input(app);
 
         // configure global opengl state
         // -----------------------------
@@ -289,90 +202,67 @@ int app_loop(void) {
         shader_use(sh);
 
         // pass projection matrix to shader
-        resolution = (float)app.width / (float)app.height;
-        glm_perspective(45.f * (GLfloat) M_RAD, resolution, 0.1f, 100.0f,
-                        app.projection);
-        shader_set_mat4(sh, "projection", app.projection);
+        glm_perspective(45.f * (GLfloat) M_RAD,
+                        window_get_resolution(&app->window),
+                        0.1f, 100.0f, app->projection);
+        shader_set_mat4(sh, "projection", app->projection);
 
         // camera/view transformation
-        camera_get_mat4((void*)&app.camera, app.last_camera);
-        shader_set_mat4(sh, "camera", app.last_camera);
+        camera_get_mat4((void*)&app->camera, app->last_camera);
+        shader_set_mat4(sh, "camera", app->last_camera);
 
         trans->rotate_all(object, rotation);
 
         // render the loaded models
-        for (Object *i = (Object*)utarray_front(scene->objects);
-             i != NULL; i = (Object*)utarray_next(scene->objects, i)) {
-            object_draw(i, app.mat4buf, app.delta_time);
+        for_each_utarr (Object, i, scene->objects){
+            object_draw(i, app->mat4buf,
+                        window_get_delta_time(&app->window));
         }
 
-        nk_glfw_render(&app.nkglfw, &app, NK_ANTI_ALIASING_ON,
-                       MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
-
-        // glfw: swap buffers and poll IO events
-        // -------------------------------------
-        glfwSwapBuffers(app.window);
+        nk_glfw_render(&app->nkglfw);
+        window_post_loop(&app->window);
     }
     return 0;
 }
 
-bool app_load_shader(const char *name) {
+bool app_load_shader(App *app, const char *name) {
     Shader *shader;
     shader = malloc(sizeof(Shader));
     if (!shader_init(name, shader)) {
         printf("Failed to compile shaders.\n");
         return false;
     }
-    HASH_ADD_STR(app.shaders, name, shader);
+    HASH_ADD_STR(app->shaders, name, shader);
     return true;
 }
 
-bool app_should_closed(void) {
-    return glfwWindowShouldClose(app.window);
+void app_scroll(Window* window, GLdouble xoffset, GLdouble yoffset) {
+    App *app = window_get_user_pointer(window);
+    nk_gflw_scroll_callback(&app->nkglfw, xoffset, yoffset);
 }
 
-// glfw: when the window size changed this callback function executes
-// ------------------------------------------------------------------
-void app_resize(GLFWwindow* window, GLint width, GLint height) {
-    // make sure the viewport matches the new window dimensions;
-    // note that width and height will be significantly larger
-    // than specified on retina displays.
-    glfwMakeContextCurrent(window);
-    glViewport(0, 0, width, height);
-    app.width = width; app.height = height;
-}
+void app_mouse(Window* window, int offset[2]) {
+    App *app = window_get_user_pointer(window);
+    GLfloat xoffset = (GLfloat)offset[0], yoffset = (GLfloat)offset[1];
 
-// glfw: when the mouse scroll wheel scrolls, this callback is called
-// ------------------------------------------------------------------
-void app_scroll(UNUSED GLFWwindow* window, UNUSED GLdouble xoffset,
-                GLdouble yoffset) {
-    nk_gflw_scroll_callback(&app.nkglfw, xoffset, yoffset);
-}
-
-void app_mouse(UNUSED GLFWwindow* window, double xpos, double ypos) {
-    float xoffset = (GLfloat)xpos - app.last_x;
-    float yoffset = (GLfloat)ypos - app.last_y;
-    app.last_x = (GLfloat)xpos;
-    app.last_y = (GLfloat)ypos;
-
-    if (app.mouse_capute) {
+    if (window->mouse_capute) {
         xoffset *= SENSITIVITY;
         yoffset *= SENSITIVITY;
 
-        camera_rotate(&app.camera, xoffset, GLM_YUP);
-        camera_rotate(&app.camera, yoffset, GLM_XUP);
+        camera_rotate(&app->camera, xoffset, GLM_YUP);
+        camera_rotate(&app->camera, yoffset, GLM_XUP);
     }
 }
 
-void app_char_callback(
-        UNUSED GLFWwindow* window, unsigned int codepoint) {
-    nk_glfw_char_callback(&app.nkglfw, codepoint);
+void app_char_callback(Window* window, unsigned int codepoint) {
+    App *app = window_get_user_pointer(window);
+    nk_glfw_char_callback(&app->nkglfw, codepoint);
 }
 
 void app_mouse_button_callback(
-        UNUSED GLFWwindow *window, int button, int action, int mods) {
-    Scene *scene = &app.scene;
-    BMesh *bmesh;
+        UNUSED Window *window, UNUSED enum BUTTONS button,
+        UNUSED bool pressed) {
+    /*model *model;
     mat4 ortho = {
         {2.0f, 0.0f, 0.0f, 0.0f},
         {0.0f,-2.0f, 0.0f, 0.0f},
@@ -381,15 +271,15 @@ void app_mouse_button_callback(
     };
     ortho[0][0] *= (GLfloat)app.width;
     ortho[1][1] *= (GLfloat)app.height;
-    bmesh = (void*)utarray_eltptr(
-                 app.bmeshes, 0);
+    model = (void*)utarray_eltptr(
+                 app.modeles, 0);
     vec4 cp;
     mat4 model;
     object_get_mat4((void*)utarray_eltptr(app.objects, 0), model);
     glm_mat4_mul(app.last_camera, model, model);
     //glm_mat4_mul(ortho, model, model);
-    for (size_t i = 0; i < bmesh->points_size; i++) {
-        glm_mat4_mulv(model, bmesh->points[i], cp);
+    for (size_t i = 0; i < model->points_size; i++) {
+        glm_mat4_mulv(model, model->points[i], cp);
         printf("%f %f %f\n", cp[0], cp[1], cp[2]);
     }
     if (action == GLFW_PRESS) {
@@ -398,61 +288,62 @@ void app_mouse_button_callback(
             printf("%f %f\n", app.last_x, app.last_y);
             break;
         }
-    }
-    nk_glfw_mouse_button_callback(
-                &app.nkglfw, &app, button, action, mods);
+    }*/
 }
 
 // glfw: when the keyboard was used, this callback is called
 // ------------------------------------------------------------------
-void app_key(GLFWwindow* window, int key, UNUSED int scancode,
-             int action, UNUSED int mods) {
-    Scene *scene = &app.scene;
-    if (action == GLFW_PRESS) {
+void app_key(Window* window, enum KEYS key, bool pressed) {
+    App *app = window_get_user_pointer(window);
+    Scene *scene = &app->scene;
+    if (pressed) {
         switch (key) {
-        case GLFW_KEY_TAB:
+        case KEY_TAB:
             scene->active++;
             break;
-        case GLFW_KEY_Z:
-            glfwMakeContextCurrent(window);
+        case KEY_Z:
             scene->wireframe = !scene->wireframe;
             if (scene->wireframe)
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             else
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             break;
-        case GLFW_KEY_X:
+        case KEY_X:
             scene->light = (scene->light)? 0 : 1;
             break;
-        case GLFW_KEY_1:
+        case KEY_1:
             scene->dirLightOn = (scene->dirLightOn)? 0 : 1;
             break;
-        case GLFW_KEY_2:
+        case KEY_2:
             scene->pointLight1On = (scene->pointLight1On)? 0 : 1;
             break;
-        case GLFW_KEY_3:
+        case KEY_3:
             scene->pointLight2On = (scene->pointLight2On)? 0 : 1;
             break;
-        case GLFW_KEY_4:
+        case KEY_4:
             scene->spotLightOn = (scene->spotLightOn)? 0 : 1;
             break;
-        case GLFW_KEY_0:
+        case KEY_0:
             scene->dirLightOn = 0;
             scene->pointLight1On = 0;
             scene->pointLight2On = 0;
             scene->spotLightOn = 0;
             break;
-        case GLFW_KEY_M:
+        case KEY_M:
             scene_del(scene);
-            scene_init(scene, app.objects);
+            scene_init(scene, app->objects);
             break;
-        case GLFW_KEY_B:
-            glfwMakeContextCurrent(window);
-            app.mouse_capute = !app.mouse_capute;
-            if (app.mouse_capute)
-                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        case KEY_B:
+        {
+            bool capute = window_is_mouse_caputed(window);
+            if (capute)
+                window_grab_mouse(window, false);
             else
-                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                window_grab_mouse(window, true);
+            window_set_mouse_capute(window, capute);
+        }
+            break;
+        default:
             break;
         }
     }
@@ -460,69 +351,66 @@ void app_key(GLFWwindow* window, int key, UNUSED int scancode,
 }
 
 
-void app_process_input(void) {
-    GLFWwindow *window = app.window;
-    Scene *scene = &app.scene;
+void app_process_input(App *app) {
+    Window *window = &app->window;
+    Scene *scene = &app->scene;
     void *object;
     Transformable *trans;
-    GLfloat delta_time = (GLfloat)app.delta_time;
+    GLfloat delta_time = (GLfloat)window_get_delta_time(window);
     if (scene->active) {
         object = (void*)utarray_eltptr(
                      scene->objects, (unsigned)scene->active - 1);
         trans = &((Object*)object)->transformable;
     } else {
-        object = (void*)&app.camera;
+        object = (void*)&app->camera;
         trans = &((Camera*)object)->transformable;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_LEFT_CONTROL))
         delta_time *= 10;
 
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_Q))
         trans->translate(object, GLM_YUP, -delta_time);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_A))
         trans->translate(object, GLM_XUP, -delta_time);
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_W))
         trans->translate(object, GLM_ZUP, -delta_time);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_S))
         trans->translate(object, GLM_ZUP, delta_time);
 
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_E))
         trans->translate(object, GLM_YUP, delta_time);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_D))
         trans->translate(object, GLM_XUP, delta_time);
 
-    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_U))
         trans->rotate(object, GLM_ZUP, -delta_time);
-    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_J))
         trans->rotate(object, GLM_YUP, -delta_time);
 
-    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_I))
         trans->rotate(object, GLM_XUP, -delta_time);
-    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_K))
         trans->rotate(object, GLM_XUP, delta_time);
 
-    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_O))
         trans->rotate(object, GLM_ZUP, delta_time);
-    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_L))
         trans->rotate(object, GLM_YUP, delta_time);
 
-    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_R))
         trans->set_animation(object, GLM_ZUP, -delta_time);
-    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_F))
         trans->set_animation(object, GLM_YUP, -delta_time);
 
-    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_T))
         trans->set_animation(object, GLM_XUP, -delta_time);
-    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_G))
         trans->set_animation(object, GLM_XUP, delta_time);
 
-    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_Y))
         trans->set_animation(object, GLM_ZUP, delta_time);
-    if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
+    if (window_is_key_pressed(window, KEY_H))
         trans->set_animation(object, GLM_YUP, delta_time);
 }

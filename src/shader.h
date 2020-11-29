@@ -1,10 +1,7 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include <cglm/cglm.h>
-#include <uthash.h>
-
-#include <GL/gl.h>
+#include "osdo.h"
 
 typedef struct Shader {
     char name[64];

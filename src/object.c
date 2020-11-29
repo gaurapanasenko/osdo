@@ -5,8 +5,8 @@
 #include "app.h"
 #include "shader.h"
 
-Object object_init(Mesh *mesh, Mesh *mesh_skel, Shader *shader) {
-    return OBJECT(mesh, mesh_skel, shader);
+void object_init(Object *object, Model *model, Shader *shader) {
+    *object = OBJECT(model, shader);
 }
 
 void object_init_empty(void *object) {
@@ -15,14 +15,10 @@ void object_init_empty(void *object) {
 
 void object_draw(Object *object, mat4 mat4buf, GLdouble delta_time) {
     // render the loaded model
-    Mesh *mesh = object->mesh;
     object_animate(object, (GLfloat)delta_time);
     object_get_mat4((void*)object, mat4buf);
     shader_set_mat4(object->shader, "model", mat4buf);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    mesh_draw(object->mesh_skel);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    mesh_draw(mesh);
+    model_draw(object->model);
 }
 
 void object_get_position_transformable(void* object, vec4 **position) {

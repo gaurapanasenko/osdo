@@ -1,8 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <cglm/cglm.h>
-#include <GL/gl.h>
+#include "osdo.h"
 
 #include "transformable.h"
 

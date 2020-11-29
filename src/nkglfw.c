@@ -1,13 +1,66 @@
-#include <cglm/cglm.h>
-#include "GL/glew.h"
-#include "GL/gl.h"
 #include "nkglfw.h"
-#include "app.h"
+#include "window.h"
+
+typedef struct key_map_t {
+    enum nk_keys nk_key;
+    enum KEYS key;
+    int control;
+} key_map_t;
+
+typedef struct mouse_map_t {
+    enum nk_buttons nk_btn;
+    enum BUTTONS btn;
+} mouse_map_t;
+
+static const key_map_t key_map[] = {
+    {NK_KEY_DEL,             KEY_DELETE,     0},
+    {NK_KEY_ENTER,           KEY_ENTER,      0},
+    {NK_KEY_TAB,             KEY_TAB,        0},
+    {NK_KEY_BACKSPACE,       KEY_BACKSPACE,  0},
+    {NK_KEY_UP,              KEY_UP,         0},
+    {NK_KEY_DOWN,            KEY_DOWN,       0},
+    {NK_KEY_TEXT_START,      KEY_HOME,       0},
+    {NK_KEY_TEXT_END,        KEY_END,        0},
+    {NK_KEY_SCROLL_START,    KEY_HOME,       0},
+    {NK_KEY_SCROLL_END,      KEY_END,        0},
+    {NK_KEY_SCROLL_DOWN,     KEY_PAGE_DOWN,  0},
+    {NK_KEY_SCROLL_UP,       KEY_PAGE_UP,    0},
+    {NK_KEY_SHIFT,           KEY_LEFT_SHIFT, 0},
+    {NK_KEY_COPY,            KEY_C,          1},
+    {NK_KEY_PASTE,           KEY_V,          1},
+    {NK_KEY_CUT,             KEY_X,          1},
+    {NK_KEY_TEXT_UNDO,       KEY_Z,          1},
+    {NK_KEY_TEXT_REDO,       KEY_R,          1},
+    {NK_KEY_TEXT_WORD_LEFT,  KEY_LEFT,       1},
+    {NK_KEY_TEXT_WORD_RIGHT, KEY_RIGHT,      1},
+    {NK_KEY_TEXT_LINE_START, KEY_B,          1},
+    {NK_KEY_TEXT_LINE_END,   KEY_E,          1},
+    {NK_KEY_LEFT,            KEY_LEFT,       2},
+    {NK_KEY_RIGHT,           KEY_RIGHT,      2},
+};
+
+static const mouse_map_t mouse_map[] = {
+    {NK_BUTTON_LEFT, MOUSE_BUTTON_LEFT},
+    {NK_BUTTON_MIDDLE, MOUSE_BUTTON_MIDDLE},
+    {NK_BUTTON_RIGHT, MOUSE_BUTTON_RIGHT},
+};
+
+static const size_t key_map_size = sizeof(key_map) / sizeof(key_map_t);
+
+static const size_t mouse_map_size =
+        sizeof(mouse_map) / sizeof(mouse_map_t);
+
+static const struct nk_draw_vertex_layout_element vertex_layout[] = {
+    {NK_VERTEX_POSITION, NK_FORMAT_FLOAT, NK_OFFSETOF(Vertex, position)},
+    {NK_VERTEX_COLOR, NK_FORMAT_R8G8B8A8, NK_OFFSETOF(Vertex, color)},
+    {NK_VERTEX_TEXCOORD, NK_FORMAT_FLOAT, NK_OFFSETOF(Vertex, uv)},
+    {NK_VERTEX_LAYOUT_END}
+};
 
 void nk_glfw_clipboard_paste(nk_handle usr, struct nk_text_edit *edit)
 {
-    App* app = usr.ptr;
-    const char *text = glfwGetClipboardString(app->window);
+    Window* window = usr.ptr;
+    const char *text = window_get_clipboard(window);
     if (text) nk_textedit_paste(edit, text, nk_strlen(text));
     (void)usr;
 }
@@ -20,33 +73,51 @@ void nk_glfw_clipboard_copy(nk_handle usr, const char *text, int len)
     if (!str) return;
     memcpy(str, text, (size_t)len);
     str[len] = '\0';
-    App* app = usr.ptr;
-    glfwSetClipboardString(app->window, str);
+    Window* window = usr.ptr;
+    window_set_clipboard(window, str);
     free(str);
 }
 
-void nk_glfw_init(NkGlfw* nkglfw, App *app,
-                  Mesh *mesh, Shader *shader) {
+void nk_glfw_init(NkGlfw* nkglfw, Window *window, Shader *shader) {
     nk_init_default(&nkglfw->context, 0);
     nkglfw->context.clip.copy = nk_glfw_clipboard_copy;
     nkglfw->context.clip.paste = nk_glfw_clipboard_paste;
-    nkglfw->context.clip.userdata = nk_handle_ptr(app);
-    nkglfw->last_button_click = 0;
-
-    nkglfw->is_double_click_down = nk_false;
-    nkglfw->double_click_pos = nk_vec2(0, 0);
+    nkglfw->context.clip.userdata = nk_handle_ptr(window);
 
     nk_buffer_init_default(&nkglfw->cmds);
-    nkglfw->mesh = mesh;
+    mesh_subinit(&nkglfw->mesh, "nuklear");
     nkglfw->shader = shader;
+    nkglfw->window = window;
     struct nk_font_atlas *atlas;
     nk_glfw_font_stash_begin(nkglfw, &atlas);
     nk_glfw_font_stash_end(nkglfw);
+
+    /* fill convert configuration */
+    struct nk_convert_config *config = &nkglfw->config;
+    memset(config, 0, sizeof(*config));
+    config->vertex_layout = vertex_layout;
+    config->vertex_size = sizeof(Vertex);
+    config->vertex_alignment = NK_ALIGNOF(Vertex);
+    config->null = nkglfw->null;
+    config->circle_segment_count = 22;
+    config->curve_segment_count = 22;
+    config->arc_segment_count = 22;
+    config->global_alpha = 1.0f;
+    config->shape_AA = NK_ANTI_ALIASING_ON;
+    config->line_AA = NK_ANTI_ALIASING_ON;
+
+    glm_mat4_copy((mat4){
+        {2.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f,-2.0f, 0.0f, 0.0f},
+        {0.0f, 0.0f,-1.0f, 0.0f},
+        {-1.0f,1.0f, 0.0f, 1.0f},
+    }, nkglfw->ortho);
 }
 
 void nk_glfw_del(NkGlfw* nkglfw) {
     glDeleteTextures(1, &nkglfw->font_tex);
     nk_buffer_free(&nkglfw->cmds);
+    mesh_del(&nkglfw->mesh);
 }
 
 void nk_glfw_font_stash_begin(NkGlfw* nkglfw,
@@ -79,118 +150,71 @@ void nk_glfw_font_stash_end(NkGlfw* nkglfw) {
                           &nkglfw->atlas.default_font->handle);
 }
 
-void nk_glfw_new_frame(NkGlfw* nkglfw, App *app) {
-    int i;
-    double x, y;
+void nk_glfw_new_frame(NkGlfw* nkglfw) {
+    int i, *cursor;
     struct nk_context *ctx = &nkglfw->context;
-    struct GLFWwindow *win = app->window;
+    struct Window *win = nkglfw->window;
+    const bool control_pressed =
+            window_is_key_pressed(win, KEY_LEFT_CONTROL) ||
+            window_is_key_pressed(win, KEY_RIGHT_CONTROL);
+    bool is_pressed;
 
     nk_input_begin(ctx);
-    for (i = 0; i < nkglfw->text_len; ++i)
+    for (i = 0; i < nkglfw->text_len && i < 64; ++i)
         nk_input_unicode(ctx, nkglfw->text[i]);
 
     /* optional grabbing behavior */
     if (ctx->input.mouse.grab)
-        glfwSetInputMode(app->window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        window_grab_mouse(nkglfw->window, true);
     else if (ctx->input.mouse.ungrab)
-        glfwSetInputMode(app->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        window_grab_mouse(nkglfw->window, false);
 
-    nk_input_key(ctx, NK_KEY_DEL,
-                 glfwGetKey(win, GLFW_KEY_DELETE) == GLFW_PRESS);
-    nk_input_key(ctx, NK_KEY_ENTER,
-                 glfwGetKey(win, GLFW_KEY_ENTER) == GLFW_PRESS);
-    nk_input_key(ctx, NK_KEY_TAB,
-                 glfwGetKey(win, GLFW_KEY_TAB) == GLFW_PRESS);
-    nk_input_key(ctx, NK_KEY_BACKSPACE,
-                 glfwGetKey(win, GLFW_KEY_BACKSPACE) == GLFW_PRESS);
-    nk_input_key(ctx, NK_KEY_UP,
-                 glfwGetKey(win, GLFW_KEY_UP) == GLFW_PRESS);
-    nk_input_key(ctx, NK_KEY_DOWN,
-                 glfwGetKey(win, GLFW_KEY_DOWN) == GLFW_PRESS);
-    nk_input_key(ctx, NK_KEY_TEXT_START,
-                 glfwGetKey(win, GLFW_KEY_HOME) == GLFW_PRESS);
-    nk_input_key(ctx, NK_KEY_TEXT_END,
-                 glfwGetKey(win, GLFW_KEY_END) == GLFW_PRESS);
-    nk_input_key(ctx, NK_KEY_SCROLL_START,
-                 glfwGetKey(win, GLFW_KEY_HOME) == GLFW_PRESS);
-    nk_input_key(ctx, NK_KEY_SCROLL_END,
-                 glfwGetKey(win, GLFW_KEY_END) == GLFW_PRESS);
-    nk_input_key(ctx, NK_KEY_SCROLL_DOWN,
-                 glfwGetKey(win, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS);
-    nk_input_key(ctx, NK_KEY_SCROLL_UP,
-                 glfwGetKey(win, GLFW_KEY_PAGE_UP) == GLFW_PRESS);
-    nk_input_key(ctx, NK_KEY_SHIFT,
-                 glfwGetKey(win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
-                 glfwGetKey(win, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
+    for (size_t i = 0; i < key_map_size; i++) {
+        if (!key_map[i].control ||
+                (bool)(key_map[i].control - 1) == !control_pressed) {
+            is_pressed = window_is_key_pressed(win, key_map[i].key);
+            nk_input_key(ctx, key_map[i].nk_key, is_pressed);
+        }
+    }
 
-    if (glfwGetKey(win, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
-        glfwGetKey(win, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS) {
-        nk_input_key(ctx, NK_KEY_COPY,
-                     glfwGetKey(win, GLFW_KEY_C) == GLFW_PRESS);
-        nk_input_key(ctx, NK_KEY_PASTE,
-                     glfwGetKey(win, GLFW_KEY_V) == GLFW_PRESS);
-        nk_input_key(ctx, NK_KEY_CUT,
-                     glfwGetKey(win, GLFW_KEY_X) == GLFW_PRESS);
-        nk_input_key(ctx, NK_KEY_TEXT_UNDO,
-                     glfwGetKey(win, GLFW_KEY_Z) == GLFW_PRESS);
-        nk_input_key(ctx, NK_KEY_TEXT_REDO,
-                     glfwGetKey(win, GLFW_KEY_R) == GLFW_PRESS);
-        nk_input_key(ctx, NK_KEY_TEXT_WORD_LEFT,
-                     glfwGetKey(win, GLFW_KEY_LEFT) == GLFW_PRESS);
-        nk_input_key(ctx, NK_KEY_TEXT_WORD_RIGHT,
-                     glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS);
-        nk_input_key(ctx, NK_KEY_TEXT_LINE_START,
-                     glfwGetKey(win, GLFW_KEY_B) == GLFW_PRESS);
-        nk_input_key(ctx, NK_KEY_TEXT_LINE_END,
-                     glfwGetKey(win, GLFW_KEY_E) == GLFW_PRESS);
-    } else {
-        nk_input_key(ctx, NK_KEY_LEFT,
-                     glfwGetKey(win, GLFW_KEY_LEFT) == GLFW_PRESS);
-        nk_input_key(ctx, NK_KEY_RIGHT,
-                     glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS);
+    if (control_pressed) {
         nk_input_key(ctx, NK_KEY_COPY, 0);
         nk_input_key(ctx, NK_KEY_PASTE, 0);
         nk_input_key(ctx, NK_KEY_CUT, 0);
         nk_input_key(ctx, NK_KEY_SHIFT, 0);
     }
 
-    glfwGetCursorPos(win, &x, &y);
-    nk_input_motion(ctx, (int)x, (int)y);
+    cursor = window_get_cursor(win);
+    nk_input_motion(ctx, cursor[0], cursor[1]);
     if (ctx->input.mouse.grabbed) {
-        glfwSetCursorPos(app->window, (GLdouble)ctx->input.mouse.prev.x,
-                         (GLdouble)ctx->input.mouse.prev.y);
+        window_set_cursor(
+                    win, (int[2]){(int)ctx->input.mouse.prev.x,
+                    (int)ctx->input.mouse.prev.y});
         ctx->input.mouse.pos.x = ctx->input.mouse.prev.x;
         ctx->input.mouse.pos.y = ctx->input.mouse.prev.y;
     }
-    nk_input_button(ctx, NK_BUTTON_LEFT, (int)x, (int)y,
-                    glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
-    nk_input_button(ctx, NK_BUTTON_MIDDLE, (int)x, (int)y,
-                    glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS);
-    nk_input_button(ctx, NK_BUTTON_RIGHT, (int)x, (int)y,
-                    glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
-    nk_input_button(ctx, NK_BUTTON_DOUBLE, (int)nkglfw->double_click_pos.x,
-            (int)nkglfw->double_click_pos.y, nkglfw->is_double_click_down);
+
+    for (size_t i = 0; i < mouse_map_size; i++) {
+        is_pressed = window_is_mouse_pressed(win, mouse_map[i].btn);
+        nk_input_button(ctx, mouse_map[i].nk_btn,
+                        cursor[0], cursor[1], is_pressed);
+    }
+    cursor = window_get_double_click_pos(win);
+    nk_input_button(
+                ctx, NK_BUTTON_DOUBLE, cursor[0], cursor[1],
+                window_is_double_clicked(win));
     nk_input_scroll(ctx, nkglfw->scroll);
     nk_input_end(&nkglfw->context);
     nkglfw->text_len = 0;
     nkglfw->scroll = nk_vec2(0, 0);
 }
 
-void nk_glfw_render(NkGlfw* nkglfw, App *app,
-                    enum nk_anti_aliasing AA, int max_vertex_buffer,
-                    int max_element_buffer) {
-    struct nk_buffer vbuf, ebuf;
-    Shader *sh = nkglfw->shader;
-    Mesh *mesh = nkglfw->mesh;
-    const GLint width = app->width, height = app->height;
-    mat4 ortho = {
-        {2.0f, 0.0f, 0.0f, 0.0f},
-        {0.0f,-2.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f,-1.0f, 0.0f},
-        {-1.0f,1.0f, 0.0f, 1.0f},
-    };
-    ortho[0][0] /= (GLfloat)width;
-    ortho[1][1] /= (GLfloat)height;
+void nk_glfw_render(NkGlfw* nkglfw) {
+    int *size = window_get_size(nkglfw->window),
+            *display = window_get_display(nkglfw->window);
+    float *scale = window_get_scale(nkglfw->window);
+    nkglfw->ortho[0][0] = 2.0f/(GLfloat)size[0];
+    nkglfw->ortho[1][1] = -2.0f/(GLfloat)size[1];
 
     /* setup global state */
     glEnable(GL_BLEND);
@@ -203,60 +227,41 @@ void nk_glfw_render(NkGlfw* nkglfw, App *app,
 
     /* setup program */
     shader_use(nkglfw->shader);
-    shader_set_int(sh, "frag_texture", 0);
-    shader_set_mat4(sh, "projection", ortho);
-    glViewport(0, 0, (GLsizei)app->display_width, (GLsizei)app->display_height);
+    shader_set_int(nkglfw->shader, "frag_texture", 0);
+    shader_set_mat4(nkglfw->shader, "projection", nkglfw->ortho);
+    glViewport(0, 0, display[0], display[1]);
     {
         /* convert from command queue into draw list
          * and draw to screen */
         const struct nk_draw_command *cmd;
-        void *vertices, *elements;
         const nk_draw_index *offset = NULL;
 
         /* allocate vertex and element buffer */
-        glBindVertexArray(mesh->vao);
-        glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
+        glBindVertexArray(nkglfw->mesh.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, nkglfw->mesh.vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nkglfw->mesh.ebo);
 
-        glBufferData(GL_ARRAY_BUFFER, max_vertex_buffer, NULL,
+        glBufferData(GL_ARRAY_BUFFER, MAX_VERTEX_BUFFER, NULL,
                      GL_STREAM_DRAW);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_element_buffer, NULL,
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_ELEMENT_BUFFER, NULL,
                      GL_STREAM_DRAW);
-
-        /* load draw vertices & elements directly into vertex
-         * + element buffer */
-        vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-        elements = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
         {
-            /* fill convert configuration */
-            struct nk_convert_config config;
-            static const struct nk_draw_vertex_layout_element vertex_layout[] = {
-            {NK_VERTEX_POSITION, NK_FORMAT_FLOAT, NK_OFFSETOF(Vertex, position)},
-            {NK_VERTEX_COLOR, NK_FORMAT_R8G8B8A8, NK_OFFSETOF(Vertex, color)},
-            {NK_VERTEX_TEXCOORD, NK_FORMAT_FLOAT, NK_OFFSETOF(Vertex, uv)},
-            {NK_VERTEX_LAYOUT_END}};
-            memset(&config, 0, sizeof(config));
-            config.vertex_layout = vertex_layout;
-            config.vertex_size = sizeof(Vertex);
-            config.vertex_alignment = NK_ALIGNOF(Vertex);
-            config.null = nkglfw->null;
-            config.circle_segment_count = 22;
-            config.curve_segment_count = 22;
-            config.arc_segment_count = 22;
-            config.global_alpha = 1.0f;
-            config.shape_AA = AA;
-            config.line_AA = AA;
-
+            /* load draw vertices & elements directly into vertex
+             * + element buffer */
+            struct nk_buffer vbuf, ebuf;
+            void *vertices, *elements;
+            vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+            elements = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
             /* setup buffers to load vertices and elements */
             nk_buffer_init_fixed(
-                        &vbuf, vertices, (size_t)max_vertex_buffer);
+                        &vbuf, vertices, (size_t)MAX_VERTEX_BUFFER);
             nk_buffer_init_fixed(
-                        &ebuf, elements, (size_t)max_element_buffer);
+                        &ebuf, elements, (size_t)MAX_ELEMENT_BUFFER);
             nk_convert(&nkglfw->context, &nkglfw->cmds,
-                       &vbuf, &ebuf, &config);
+                       &vbuf, &ebuf, &nkglfw->config);
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+            glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
         }
-        glUnmapBuffer(GL_ARRAY_BUFFER);
-        glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
         /* iterate over and execute each draw command */
         nk_draw_foreach(cmd, &nkglfw->context, &nkglfw->cmds)
@@ -264,11 +269,11 @@ void nk_glfw_render(NkGlfw* nkglfw, App *app,
             if (!cmd->elem_count) continue;
             glBindTexture(GL_TEXTURE_2D, (GLuint)cmd->texture.id);
             glScissor(
-                (GLint)(cmd->clip_rect.x * app->framebuffer_scale[0]),
-                (GLint)((height - (GLint)(cmd->clip_rect.y + cmd->clip_rect.h))
-                        * (GLint)app->framebuffer_scale[1]),
-                (GLint)(cmd->clip_rect.w * app->framebuffer_scale[0]),
-                (GLint)(cmd->clip_rect.h * app->framebuffer_scale[1]));
+                (GLint)(cmd->clip_rect.x * scale[0]),
+                ((size[1] - (GLint)(cmd->clip_rect.y +
+                                    cmd->clip_rect.h)) * (GLint)scale[1]),
+                (GLint)(cmd->clip_rect.w * scale[0]),
+                (GLint)(cmd->clip_rect.h * scale[1]));
             glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count,
                            GL_UNSIGNED_SHORT, offset);
             offset += cmd->elem_count;
@@ -294,20 +299,4 @@ void nk_glfw_char_callback(NkGlfw* nkglfw, unsigned int codepoint) {
 void nk_gflw_scroll_callback(NkGlfw* nkglfw, double xoff, double yoff) {
     nkglfw->scroll.x += (float)xoff;
     nkglfw->scroll.y += (float)yoff;
-}
-
-void nk_glfw_mouse_button_callback(
-        NkGlfw* nkglfw, App *app, int button, int action,
-        UNUSED int mods) {
-    double x, y;
-    if (button != GLFW_MOUSE_BUTTON_LEFT) return;
-    glfwGetCursorPos(app->window, &x, &y);
-    if (action == GLFW_PRESS)  {
-        double dt = glfwGetTime() - nkglfw->last_button_click;
-        if (dt > NK_GLFW_DOUBLE_CLICK_LO && dt < NK_GLFW_DOUBLE_CLICK_HI) {
-            nkglfw->is_double_click_down = nk_true;
-            nkglfw->double_click_pos = nk_vec2((float)x, (float)y);
-        }
-        nkglfw->last_button_click = glfwGetTime();
-    } else nkglfw->is_double_click_down = nk_false;
 }

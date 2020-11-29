@@ -1,6 +1,7 @@
 #ifndef SCENE_H
 #define SCENE_H
-#include <GL/gl.h>
+
+#include "osdo.h"
 
 #include "object.h"
 

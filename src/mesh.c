@@ -1,5 +1,4 @@
 #include <string.h>
-#include <GL/glew.h>
 #include "mesh.h"
 #include "conf.h"
 
@@ -75,7 +74,7 @@ void mesh_clear(Mesh* mesh) {
         free(mesh->vertices);
         mesh->vertices = NULL;
     }
-    if (mesh->indices){
+    if (mesh->indices) {
         free(mesh->indices);
         mesh->indices = NULL;
     }
@@ -108,10 +107,8 @@ void mesh_draw(Mesh *mesh) {
 }
 
 void mesh_del(Mesh *mesh) {
-    if (mesh->vertices && mesh->indices) {
-        glDeleteVertexArrays(1, &mesh->vao);
-        glDeleteBuffers(1, &mesh->vbo);
-        glDeleteBuffers(1, &mesh->ebo);
-    }
+    glDeleteVertexArrays(1, &mesh->vao);
+    glDeleteBuffers(1, &mesh->vbo);
+    glDeleteBuffers(1, &mesh->ebo);
     mesh_clear(mesh);
 }

@@ -1,9 +1,7 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include <cglm/cglm.h>
-#include <GL/gl.h>
-#include <uthash.h>
+#include "osdo.h"
 
 typedef struct Vertex {
     vec3 position;
