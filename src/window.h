@@ -32,6 +32,7 @@ enum BUTTONS {
     MOUSE_BUTTON_LEFT,
     MOUSE_BUTTON_MIDDLE,
     MOUSE_BUTTON_RIGHT,
+    MOUSE_BUTTON_DOUBLE,
 };
 
 struct Window;
@@ -39,7 +40,7 @@ struct Window;
 typedef void (*scroll_cb_t)(
         struct Window *window, GLdouble xoffset, GLdouble yoffset);
 typedef void (*mouse_motion_cb_t)(
-        struct Window *window, int offset[2]);
+        struct Window *window, int pos[2], int offset[2]);
 typedef void (*char_cb_t)(
         struct Window *window, unsigned int codepoint);
 typedef void (*mouse_button_cb_t)(
@@ -52,11 +53,10 @@ typedef struct Window {
     void *user_pointer;
 
     // screen size
-    int size[2], display[2], double_click_pos[2];
+    int size[2], display[2];
     vec2 scale;
     int cursor[2];
     bool mouse_capute;
-    bool double_click;
     double last_click_time, current_time, last_time, delta_time;
 
     scroll_cb_t scroll_cb;
@@ -68,6 +68,8 @@ typedef struct Window {
 
 int window_init(Window *window);
 void window_del(Window *window);
+
+bool window_alive(Window *window);
 bool window_pre_loop(Window *window);
 void window_post_loop(Window *window);
 
@@ -95,8 +97,6 @@ void window_set_cursor(Window *window, int coords[2]);
 int *window_get_size(Window *window);
 int *window_get_display(Window *window);
 float *window_get_scale(Window *window);
-int *window_get_double_click_pos(Window *window);
-bool window_is_double_clicked(Window *window);
 
 void window_set_scroll_cb(Window *window, scroll_cb_t callback);
 void window_set_mouse_motion_cb(

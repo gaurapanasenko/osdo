@@ -1,55 +1,6 @@
 #include "nkglfw.h"
 #include "window.h"
 
-typedef struct key_map_t {
-    enum nk_keys nk_key;
-    enum KEYS key;
-    int control;
-} key_map_t;
-
-typedef struct mouse_map_t {
-    enum nk_buttons nk_btn;
-    enum BUTTONS btn;
-} mouse_map_t;
-
-static const key_map_t key_map[] = {
-    {NK_KEY_DEL,             KEY_DELETE,     0},
-    {NK_KEY_ENTER,           KEY_ENTER,      0},
-    {NK_KEY_TAB,             KEY_TAB,        0},
-    {NK_KEY_BACKSPACE,       KEY_BACKSPACE,  0},
-    {NK_KEY_UP,              KEY_UP,         0},
-    {NK_KEY_DOWN,            KEY_DOWN,       0},
-    {NK_KEY_TEXT_START,      KEY_HOME,       0},
-    {NK_KEY_TEXT_END,        KEY_END,        0},
-    {NK_KEY_SCROLL_START,    KEY_HOME,       0},
-    {NK_KEY_SCROLL_END,      KEY_END,        0},
-    {NK_KEY_SCROLL_DOWN,     KEY_PAGE_DOWN,  0},
-    {NK_KEY_SCROLL_UP,       KEY_PAGE_UP,    0},
-    {NK_KEY_SHIFT,           KEY_LEFT_SHIFT, 0},
-    {NK_KEY_COPY,            KEY_C,          1},
-    {NK_KEY_PASTE,           KEY_V,          1},
-    {NK_KEY_CUT,             KEY_X,          1},
-    {NK_KEY_TEXT_UNDO,       KEY_Z,          1},
-    {NK_KEY_TEXT_REDO,       KEY_R,          1},
-    {NK_KEY_TEXT_WORD_LEFT,  KEY_LEFT,       1},
-    {NK_KEY_TEXT_WORD_RIGHT, KEY_RIGHT,      1},
-    {NK_KEY_TEXT_LINE_START, KEY_B,          1},
-    {NK_KEY_TEXT_LINE_END,   KEY_E,          1},
-    {NK_KEY_LEFT,            KEY_LEFT,       2},
-    {NK_KEY_RIGHT,           KEY_RIGHT,      2},
-};
-
-static const mouse_map_t mouse_map[] = {
-    {NK_BUTTON_LEFT, MOUSE_BUTTON_LEFT},
-    {NK_BUTTON_MIDDLE, MOUSE_BUTTON_MIDDLE},
-    {NK_BUTTON_RIGHT, MOUSE_BUTTON_RIGHT},
-};
-
-static const size_t key_map_size = sizeof(key_map) / sizeof(key_map_t);
-
-static const size_t mouse_map_size =
-        sizeof(mouse_map) / sizeof(mouse_map_t);
-
 static const struct nk_draw_vertex_layout_element vertex_layout[] = {
     {NK_VERTEX_POSITION, NK_FORMAT_FLOAT, NK_OFFSETOF(Vertex, position)},
     {NK_VERTEX_COLOR, NK_FORMAT_R8G8B8A8, NK_OFFSETOF(Vertex, color)},
@@ -150,63 +101,12 @@ void nk_glfw_font_stash_end(NkGlfw* nkglfw) {
                           &nkglfw->atlas.default_font->handle);
 }
 
-void nk_glfw_new_frame(NkGlfw* nkglfw) {
-    int i, *cursor;
-    struct nk_context *ctx = &nkglfw->context;
-    struct Window *win = nkglfw->window;
-    const bool control_pressed =
-            window_is_key_pressed(win, KEY_LEFT_CONTROL) ||
-            window_is_key_pressed(win, KEY_RIGHT_CONTROL);
-    bool is_pressed;
+void nk_glfw_begin_input(NkGlfw* nkglfw) {
+    nk_input_begin(&nkglfw->context);
+}
 
-    nk_input_begin(ctx);
-    for (i = 0; i < nkglfw->text_len && i < 64; ++i)
-        nk_input_unicode(ctx, nkglfw->text[i]);
-
-    /* optional grabbing behavior */
-    if (ctx->input.mouse.grab)
-        window_grab_mouse(nkglfw->window, true);
-    else if (ctx->input.mouse.ungrab)
-        window_grab_mouse(nkglfw->window, false);
-
-    for (size_t i = 0; i < key_map_size; i++) {
-        if (!key_map[i].control ||
-                (bool)(key_map[i].control - 1) == !control_pressed) {
-            is_pressed = window_is_key_pressed(win, key_map[i].key);
-            nk_input_key(ctx, key_map[i].nk_key, is_pressed);
-        }
-    }
-
-    if (control_pressed) {
-        nk_input_key(ctx, NK_KEY_COPY, 0);
-        nk_input_key(ctx, NK_KEY_PASTE, 0);
-        nk_input_key(ctx, NK_KEY_CUT, 0);
-        nk_input_key(ctx, NK_KEY_SHIFT, 0);
-    }
-
-    cursor = window_get_cursor(win);
-    nk_input_motion(ctx, cursor[0], cursor[1]);
-    if (ctx->input.mouse.grabbed) {
-        window_set_cursor(
-                    win, (int[2]){(int)ctx->input.mouse.prev.x,
-                    (int)ctx->input.mouse.prev.y});
-        ctx->input.mouse.pos.x = ctx->input.mouse.prev.x;
-        ctx->input.mouse.pos.y = ctx->input.mouse.prev.y;
-    }
-
-    for (size_t i = 0; i < mouse_map_size; i++) {
-        is_pressed = window_is_mouse_pressed(win, mouse_map[i].btn);
-        nk_input_button(ctx, mouse_map[i].nk_btn,
-                        cursor[0], cursor[1], is_pressed);
-    }
-    cursor = window_get_double_click_pos(win);
-    nk_input_button(
-                ctx, NK_BUTTON_DOUBLE, cursor[0], cursor[1],
-                window_is_double_clicked(win));
-    nk_input_scroll(ctx, nkglfw->scroll);
+void nk_glfw_end_input(NkGlfw* nkglfw) {
     nk_input_end(&nkglfw->context);
-    nkglfw->text_len = 0;
-    nkglfw->scroll = nk_vec2(0, 0);
 }
 
 void nk_glfw_render(NkGlfw* nkglfw) {
@@ -215,6 +115,11 @@ void nk_glfw_render(NkGlfw* nkglfw) {
     float *scale = window_get_scale(nkglfw->window);
     nkglfw->ortho[0][0] = 2.0f/(GLfloat)size[0];
     nkglfw->ortho[1][1] = -2.0f/(GLfloat)size[1];
+
+    if (nkglfw->context.input.mouse.grab)
+        window_grab_mouse(nkglfw->window, true);
+    if (nkglfw->context.input.mouse.ungrab)
+        window_grab_mouse(nkglfw->window, false);
 
     /* setup global state */
     glEnable(GL_BLEND);
@@ -291,12 +196,127 @@ void nk_glfw_render(NkGlfw* nkglfw) {
     glDisable(GL_SCISSOR_TEST);
 }
 
-void nk_glfw_char_callback(NkGlfw* nkglfw, unsigned int codepoint) {
-    if (nkglfw->text_len < NK_GLFW_TEXT_MAX)
-        nkglfw->text[nkglfw->text_len++] = codepoint;
+void nk_gflw_scroll_callback(NkGlfw* nkglfw, double xoff, double yoff) {
+    nk_input_scroll(&nkglfw->context, nk_vec2((float)xoff, (float)yoff));
 }
 
-void nk_gflw_scroll_callback(NkGlfw* nkglfw, double xoff, double yoff) {
-    nkglfw->scroll.x += (float)xoff;
-    nkglfw->scroll.y += (float)yoff;
+void nk_glfw_mouse_callback(
+        NkGlfw* nkglfw, int pos[2], UNUSED int offset[2]) {
+    struct nk_context *ctx = &nkglfw->context;
+    nk_input_motion(ctx, pos[0], pos[1]);
+    if (ctx->input.mouse.grabbed) {
+        window_set_cursor(
+                    nkglfw->window,
+                    (int[2]){(int)ctx->input.mouse.prev.x,
+                    (int)ctx->input.mouse.prev.y});
+        ctx->input.mouse.pos.x = ctx->input.mouse.prev.x;
+        ctx->input.mouse.pos.y = ctx->input.mouse.prev.y;
+    }
+}
+
+void nk_glfw_char_callback(NkGlfw* nkglfw, unsigned int codepoint) {
+    nk_input_unicode(&nkglfw->context, codepoint);
+}
+
+void nk_glfw_mouse_button_callback(
+        NkGlfw* nkglfw, enum BUTTONS button, bool pressed) {
+    int *cursor = window_get_cursor(nkglfw->window);
+    struct nk_context *ctx = &nkglfw->context;
+    switch (button) {
+    case MOUSE_BUTTON_LEFT:
+        nk_input_button(ctx, NK_BUTTON_LEFT, cursor[0], cursor[1],
+                pressed);
+        break;
+    case MOUSE_BUTTON_MIDDLE:
+        nk_input_button(ctx, NK_BUTTON_MIDDLE, cursor[0], cursor[1],
+                pressed);
+        break;
+    case MOUSE_BUTTON_RIGHT:
+        nk_input_button(ctx, NK_BUTTON_RIGHT, cursor[0], cursor[1],
+                pressed);
+        break;
+    case MOUSE_BUTTON_DOUBLE:
+        nk_input_button(ctx, NK_BUTTON_DOUBLE, cursor[0], cursor[1],
+                pressed);
+        break;
+    }
+}
+
+void nk_glfw_key_callback(
+        NkGlfw* nkglfw, enum KEYS key, bool pressed) {
+    struct nk_context *ctx = &nkglfw->context;
+    enum nk_keys k[16], inv[16];
+    Window *win = nkglfw->window;
+    int n = 0, m = 0;
+    const bool ctrl =
+            window_is_key_pressed(win, KEY_LEFT_CONTROL) ||
+            window_is_key_pressed(win, KEY_RIGHT_CONTROL);
+    switch (key) {
+    case KEY_DELETE:      k[n++] = NK_KEY_DEL;             break;
+    case KEY_ENTER:       k[n++] = NK_KEY_ENTER;           break;
+    case KEY_TAB:         k[n++] = NK_KEY_TAB;             break;
+    case KEY_BACKSPACE:   k[n++] = NK_KEY_BACKSPACE;       break;
+    case KEY_UP:          k[n++] = NK_KEY_UP;              break;
+    case KEY_DOWN:        k[n++] = NK_KEY_DOWN;            break;
+    case KEY_PAGE_DOWN:   k[n++] = NK_KEY_SCROLL_DOWN;     break;
+    case KEY_PAGE_UP:     k[n++] = NK_KEY_SCROLL_UP;       break;
+    case KEY_C:           k[n++] = NK_KEY_COPY;            break;
+    case KEY_V: if (ctrl) k[n++] = NK_KEY_PASTE;           break;
+    case KEY_X: if (ctrl) k[n++] = NK_KEY_CUT;             break;
+    case KEY_Z: if (ctrl) k[n++] = NK_KEY_TEXT_UNDO;       break;
+    case KEY_R: if (ctrl) k[n++] = NK_KEY_TEXT_REDO;       break;
+    case KEY_B: if (ctrl) k[n++] = NK_KEY_TEXT_LINE_START; break;
+    case KEY_E: if (ctrl) k[n++] = NK_KEY_TEXT_LINE_END;   break;
+    case KEY_LEFT:
+        if (ctrl) k[n++] = NK_KEY_TEXT_WORD_LEFT;
+        else k[n++] = NK_KEY_LEFT;
+        break;
+    case KEY_RIGHT:
+        if (ctrl) k[n++] = NK_KEY_TEXT_WORD_RIGHT;
+        else k[n++] = NK_KEY_RIGHT;
+        break;
+    case KEY_HOME:
+        k[n++] = NK_KEY_TEXT_START; k[n++] = NK_KEY_SCROLL_START;
+        break;
+    case KEY_END:
+        k[n++] = NK_KEY_TEXT_END;   k[n++] = NK_KEY_SCROLL_END;
+        break;
+    case KEY_LEFT_CONTROL:
+    case KEY_RIGHT_CONTROL:
+        if (window_is_key_pressed(win, KEY_V))
+            k[n++] = NK_KEY_PASTE;
+        if (window_is_key_pressed(win, KEY_X))
+            k[n++] = NK_KEY_CUT;
+        if (window_is_key_pressed(win, KEY_Z))
+            k[n++] = NK_KEY_TEXT_UNDO;
+        if (window_is_key_pressed(win, KEY_R))
+            k[n++] = NK_KEY_TEXT_REDO;
+        if (window_is_key_pressed(win, KEY_B))
+            k[n++] = NK_KEY_TEXT_LINE_START;
+        if (window_is_key_pressed(win, KEY_E))
+            k[n++] = NK_KEY_TEXT_LINE_END;
+        if (window_is_key_pressed(win, KEY_LEFT)) {
+            k[n++] = NK_KEY_TEXT_WORD_LEFT;
+            inv[m++] = NK_KEY_LEFT;
+        } else {
+            inv[m++] = NK_KEY_TEXT_WORD_LEFT;
+            k[n++] = NK_KEY_LEFT;
+        }
+        if (window_is_key_pressed(win, KEY_RIGHT)) {
+            k[n++] = NK_KEY_TEXT_WORD_RIGHT;
+            inv[m++] = NK_KEY_RIGHT;
+        } else {
+            inv[m++] = NK_KEY_TEXT_WORD_RIGHT;
+            k[n++] = NK_KEY_RIGHT;
+        }
+        break;
+    default:
+        break;
+    }
+    for (int i = 0; i < n; i++)
+        if (k[i] != NK_KEY_NONE)
+            nk_input_key(ctx, k[i], pressed);
+    for (int i = 0; i < m; i++)
+        if (inv[i] != NK_KEY_NONE)
+            nk_input_key(ctx, inv[i], !pressed);
 }

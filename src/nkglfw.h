@@ -19,8 +19,6 @@ typedef struct NkGlfw {
     struct nk_draw_null_texture null;
     struct nk_vec2 scroll;
     struct nk_convert_config config;
-    unsigned int text[NK_GLFW_TEXT_MAX];
-    int text_len;
     GLuint font_tex;
     Window *window;
     mat4 ortho;
@@ -33,12 +31,16 @@ void nk_glfw_font_stash_begin(NkGlfw* nkglfw,
                               struct nk_font_atlas **atlas);
 void nk_glfw_font_stash_end(NkGlfw* nkglfw);
 
-void nk_glfw_new_frame(NkGlfw* nkglfw);
+void nk_glfw_begin_input(NkGlfw* nkglfw);
+void nk_glfw_end_input(NkGlfw* nkglfw);
 void nk_glfw_render(NkGlfw* nkglfw);
 
-void nk_glfw_char_callback(NkGlfw* nkglfw, unsigned int codepoint);
 void nk_gflw_scroll_callback(NkGlfw* nkglfw, double xoff, double yoff);
+void nk_glfw_mouse_callback(NkGlfw *nkglfw, int pos[2], int offset[2]);
+void nk_glfw_char_callback(NkGlfw* nkglfw, unsigned int codepoint);
 void nk_glfw_mouse_button_callback(
-        NkGlfw* nkglfw, int button, int action, int mods);
+        NkGlfw* nkglfw, enum BUTTONS button, bool pressed);
+void nk_glfw_key_callback(
+        NkGlfw* nkglfw, enum KEYS key, bool pressed);
 
 #endif // NKGLFW_H

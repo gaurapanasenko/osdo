@@ -82,8 +82,10 @@ int app_loop(App *app) {
 
     // render loop
     // -----------
-    while(window_pre_loop(&app->window)) {
-        nk_glfw_new_frame(&app->nkglfw);
+    while(window_alive(&app->window)) {
+        nk_glfw_begin_input(&app->nkglfw);
+        window_pre_loop(&app->window);
+        nk_glfw_end_input(&app->nkglfw);
 
         if (scene->active)
             snprintf(text, 128, "Object %zu", scene->active);
@@ -241,7 +243,7 @@ void app_scroll(Window* window, GLdouble xoffset, GLdouble yoffset) {
     nk_gflw_scroll_callback(&app->nkglfw, xoffset, yoffset);
 }
 
-void app_mouse(Window* window, int offset[2]) {
+void app_mouse(Window* window, int pos[2], int offset[2]) {
     App *app = window_get_user_pointer(window);
     GLfloat xoffset = (GLfloat)offset[0], yoffset = (GLfloat)offset[1];
 
@@ -252,6 +254,7 @@ void app_mouse(Window* window, int offset[2]) {
         camera_rotate(&app->camera, xoffset, GLM_YUP);
         camera_rotate(&app->camera, yoffset, GLM_XUP);
     }
+    nk_glfw_mouse_callback(&app->nkglfw, pos, offset);
 }
 
 void app_char_callback(Window* window, unsigned int codepoint) {
@@ -260,8 +263,9 @@ void app_char_callback(Window* window, unsigned int codepoint) {
 }
 
 void app_mouse_button_callback(
-        UNUSED Window *window, UNUSED enum BUTTONS button,
+        Window *window, UNUSED enum BUTTONS button,
         UNUSED bool pressed) {
+    App *app = window_get_user_pointer(window);
     /*model *model;
     mat4 ortho = {
         {2.0f, 0.0f, 0.0f, 0.0f},
@@ -289,6 +293,7 @@ void app_mouse_button_callback(
             break;
         }
     }*/
+    nk_glfw_mouse_button_callback(&app->nkglfw, button, pressed);
 }
 
 // glfw: when the keyboard was used, this callback is called
@@ -348,6 +353,7 @@ void app_key(Window* window, enum KEYS key, bool pressed) {
         }
     }
     if (scene->active > utarray_len(scene->objects)) scene->active = 0;
+    nk_glfw_key_callback(&app->nkglfw, key, pressed);
 }
 
 

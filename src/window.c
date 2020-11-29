@@ -142,10 +142,14 @@ void window_del(UNUSED Window *window) {
     glfwTerminate();
 }
 
+bool window_alive(Window *window) {
+    return !glfwWindowShouldClose(window->window);
+}
+
 bool window_pre_loop(Window *window) {
     if (glfwWindowShouldClose(window->window)) return false;
     glfwMakeContextCurrent(window->window);
-    glfwPollEvents();
+    glfwWaitEvents();
     window_update_cursor(window);
     glfwGetWindowSize(window->window, window->size, window->size + 1);
     glfwGetFramebufferSize(
@@ -236,14 +240,6 @@ float *window_get_scale(Window *window) {
     return window->scale;
 }
 
-int *window_get_double_click_pos(Window *window) {
-    return window->double_click_pos;
-}
-
-bool window_is_double_clicked(Window *window) {
-    return window->double_click;
-}
-
 void window_set_scroll_cb(Window *window, scroll_cb_t callback) {
     window->scroll_cb = callback;
 }
@@ -285,7 +281,7 @@ void window_mouse_motion_cb(
     int offset[] = {(int)xpos - win->cursor[0],
                     (int)ypos - win->cursor[1]};
     win->cursor[0] = (int)xpos; win->cursor[1] = (int)ypos;
-    win->mouse_motion_cb(win, offset);
+    win->mouse_motion_cb(win, win->cursor, offset);
 }
 
 void window_char_cb(GLFWwindow* window, unsigned int codepoint) {
@@ -296,19 +292,16 @@ void window_char_cb(GLFWwindow* window, unsigned int codepoint) {
 void window_mouse_button_cb(
         GLFWwindow *window, int button, int action, UNUSED int mods) {
     Window *win = glfwGetWindowUserPointer(window);
-    if (button == GLFW_MOUSE_BUTTON_LEFT) {
-        if (action == GLFW_PRESS)  {
-            double dt = glfwGetTime() - win->last_click_time;
-            if (dt > NK_GLFW_DOUBLE_CLICK_LO && dt < NK_GLFW_DOUBLE_CLICK_HI) {
-                win->double_click = true;
-                win->double_click_pos[0] = win->cursor[0];
-                win->double_click_pos[1] = win->cursor[1];
-            }
-            win->last_click_time = glfwGetTime();
-        } else
-            win->double_click = false;
+    enum BUTTONS btn = glfw_btn_map[button];
+    bool pressed = action == GLFW_PRESS;
+    if (button == GLFW_MOUSE_BUTTON_LEFT && pressed) {
+        double dt = glfwGetTime() - win->last_click_time;
+        if (dt > NK_GLFW_DOUBLE_CLICK_LO && dt < NK_GLFW_DOUBLE_CLICK_HI) {
+            btn = MOUSE_BUTTON_DOUBLE;
+        }
+        win->last_click_time = glfwGetTime();
     }
-    win->mouse_button_cb(win, glfw_btn_map[button], action == GLFW_PRESS);
+    win->mouse_button_cb(win, btn, pressed);
 }
 
 void window_key_cb(GLFWwindow* window, int key, UNUSED int scancode,
