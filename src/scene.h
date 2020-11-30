@@ -12,7 +12,7 @@ typedef struct Scene {
     size_t active;
 
     // states
-    bool wireframe;
+    int wireframe;
     bool light;
     bool dirLightOn;
     bool pointLight1On;

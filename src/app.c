@@ -105,9 +105,18 @@ int app_loop(App *app) {
         glm_vec3_copy(GLM_VEC3_ZERO, rotation);
 
         /* GUI */
-        if (nk_begin(ctx, text, nk_rect(4, 4, 256, 512),
+        if (nk_begin(ctx, "OSDO", nk_rect(4, 4, 256, 512),
             NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
             NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
+            nk_layout_row_dynamic(ctx, 25, 1);
+            nk_checkbox_label(ctx, "Wireframe",
+                              &app->scene.wireframe);
+            nk_label(ctx, "Active element:", NK_TEXT_LEFT);
+            nk_layout_row_dynamic(ctx, 25, 2);
+            nk_label(ctx, text, NK_TEXT_LEFT);
+            scene->active = (size_t)(nk_propertyi(
+                                ctx, "#", 0, (int)scene->active,
+                                (int)utarray_len(scene->objects), 1, 0.1f));
             nk_layout_row_dynamic(ctx, 25, 1);
             nk_label(ctx, "Position:", NK_TEXT_LEFT);
             nk_layout_row_dynamic(ctx, 25, 3);
@@ -216,12 +225,16 @@ int app_loop(App *app) {
 
         trans->rotate_all(object, rotation);
 
+        glPointSize(10);
+        if (!scene->wireframe)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
         // render the loaded models
         for_each_utarr (Object, i, scene->objects){
             object_draw(i, app->mat4buf,
                         window_get_delta_time(&app->window));
         }
 
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         nk_glfw_render(&app->nkglfw);
         window_post_loop(&app->window);
     }
@@ -267,33 +280,21 @@ void app_mouse_button_callback(
         Window *window, UNUSED enum BUTTONS button,
         UNUSED bool pressed) {
     App *app = window_get_user_pointer(window);
-    /*model *model;
-    mat4 ortho = {
-        {2.0f, 0.0f, 0.0f, 0.0f},
-        {0.0f,-2.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f,-1.0f, 0.0f},
-        {-1.0f,1.0f, 0.0f, 1.0f},
-    };
-    ortho[0][0] *= (GLfloat)app.width;
-    ortho[1][1] *= (GLfloat)app.height;
-    model = (void*)utarray_eltptr(
-                 app.modeles, 0);
+    /*Object *object = (void*)utarray_eltptr(app->objects, 0);
+    Model *model = object->model;
+    int *size = window_get_size(&app->window);
+    int *cursor = window_get_cursor(&app->window);
     vec4 cp;
-    mat4 model;
-    object_get_mat4((void*)utarray_eltptr(app.objects, 0), model);
-    glm_mat4_mul(app.last_camera, model, model);
-    //glm_mat4_mul(ortho, model, model);
+    mat4 m;
+    object_get_mat4(object, m);
+    glm_mat4_mul(app->last_camera, m, m);
+    glm_mat4_mul(app->projection, m, m);
     for (size_t i = 0; i < model->points_size; i++) {
-        glm_mat4_mulv(model, model->points[i], cp);
-        printf("%f %f %f\n", cp[0], cp[1], cp[2]);
+        glm_mat4_mulv(m, model->points[i], cp);
+        printf("%f %f %f\n", cp[0] / cp[2], cp[1] / cp[2], cp[2]);
     }
-    if (action == GLFW_PRESS) {
-        switch (button) {
-        case GLFW_MOUSE_BUTTON_LEFT:
-            printf("%f %f\n", app.last_x, app.last_y);
-            break;
-        }
-    }*/
+    printf("Tap: %f %f\n", (float)cursor[0] * 2.0 / (float)size[0] - 1.0,
+        (float)cursor[1] * 2.0 / (float)size[1] - 1.0);*/
     nk_glfw_mouse_button_callback(&app->nkglfw, button, pressed);
 }
 
@@ -310,10 +311,6 @@ void app_key(Window* window, enum KEYS key, bool pressed) {
             break;
         case KEY_Z:
             scene->wireframe = !scene->wireframe;
-            if (scene->wireframe)
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            else
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             break;
         case KEY_X:
             scene->light = (scene->light)? 0 : 1;

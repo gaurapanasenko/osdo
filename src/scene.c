@@ -4,7 +4,7 @@
 
 void scene_init(Scene *scene, UT_array *objects) {
     *scene = (Scene){
-        NULL, 0, 0, 0, 1, 1, 1, 1
+        NULL, 0, 1, 0, 1, 1, 1, 1
     };
     utarray_new(scene->objects, &object_icd);
     if (utarray_len(objects))
