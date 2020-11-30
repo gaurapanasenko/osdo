@@ -10,6 +10,7 @@ int app_init(App *app) {
     window_init(&app->window);
     utarray_new(app->objects, &object_icd);
     app->camera = CAMERA;
+    memset(app->trans, 0, sizeof(app->trans));
 
     window_set_user_pointer(&app->window, app);
     window_set_scroll_cb(&app->window, app_scroll);
@@ -301,6 +302,7 @@ void app_mouse_button_callback(
 void app_key(Window* window, enum KEYS key, bool pressed) {
     App *app = window_get_user_pointer(window);
     Scene *scene = &app->scene;
+    int t = pressed ? 1 : -1;
     if (pressed) {
         switch (key) {
         case KEY_TAB:
@@ -352,16 +354,41 @@ void app_key(Window* window, enum KEYS key, bool pressed) {
             break;
         }
     }
+    switch (key) {
+    case KEY_Q: app->trans[TRANSLATE][Y] -= t; break;
+    case KEY_A: app->trans[TRANSLATE][X] -= t; break;
+    case KEY_W: app->trans[TRANSLATE][Z] -= t; break;
+    case KEY_S: app->trans[TRANSLATE][Z] += t; break;
+    case KEY_E: app->trans[TRANSLATE][Y] += t; break;
+    case KEY_D: app->trans[TRANSLATE][X] += t; break;
+    case KEY_U: app->trans[ROTATE   ][Z] += t; break;
+    case KEY_J: app->trans[ROTATE   ][Y] -= t; break;
+    case KEY_I: app->trans[ROTATE   ][X] -= t; break;
+    case KEY_K: app->trans[ROTATE   ][X] += t; break;
+    case KEY_O: app->trans[ROTATE   ][Z] -= t; break;
+    case KEY_L: app->trans[ROTATE   ][Y] += t; break;
+    case KEY_R: app->trans[ANIMATE  ][Z] += t; break;
+    case KEY_F: app->trans[ANIMATE  ][Y] -= t; break;
+    case KEY_T: app->trans[ANIMATE  ][X] -= t; break;
+    case KEY_G: app->trans[ANIMATE  ][X] += t; break;
+    case KEY_Y: app->trans[ANIMATE  ][Z] -= t; break;
+    case KEY_H: app->trans[ANIMATE  ][Y] += t; break;
+    default:
+        break;
+
+    }
     if (scene->active > utarray_len(scene->objects)) scene->active = 0;
     nk_glfw_key_callback(&app->nkglfw, key, pressed);
 }
 
+static mat3 m3i = GLM_MAT3_IDENTITY_INIT;
 
 void app_process_input(App *app) {
     Window *window = &app->window;
     Scene *scene = &app->scene;
     void *object;
     Transformable *trans;
+    float t;
     GLfloat delta_time = (GLfloat)window_get_delta_time(window);
     if (scene->active) {
         object = (void*)utarray_eltptr(
@@ -375,48 +402,22 @@ void app_process_input(App *app) {
     if (window_is_key_pressed(window, KEY_LEFT_CONTROL))
         delta_time *= 10;
 
-    if (window_is_key_pressed(window, KEY_Q))
-        trans->translate(object, GLM_YUP, -delta_time);
-    if (window_is_key_pressed(window, KEY_A))
-        trans->translate(object, GLM_XUP, -delta_time);
-
-    if (window_is_key_pressed(window, KEY_W))
-        trans->translate(object, GLM_ZUP, -delta_time);
-    if (window_is_key_pressed(window, KEY_S))
-        trans->translate(object, GLM_ZUP, delta_time);
-
-    if (window_is_key_pressed(window, KEY_E))
-        trans->translate(object, GLM_YUP, delta_time);
-    if (window_is_key_pressed(window, KEY_D))
-        trans->translate(object, GLM_XUP, delta_time);
-
-    if (window_is_key_pressed(window, KEY_U))
-        trans->rotate(object, GLM_ZUP, -delta_time);
-    if (window_is_key_pressed(window, KEY_J))
-        trans->rotate(object, GLM_YUP, -delta_time);
-
-    if (window_is_key_pressed(window, KEY_I))
-        trans->rotate(object, GLM_XUP, -delta_time);
-    if (window_is_key_pressed(window, KEY_K))
-        trans->rotate(object, GLM_XUP, delta_time);
-
-    if (window_is_key_pressed(window, KEY_O))
-        trans->rotate(object, GLM_ZUP, delta_time);
-    if (window_is_key_pressed(window, KEY_L))
-        trans->rotate(object, GLM_YUP, delta_time);
-
-    if (window_is_key_pressed(window, KEY_R))
-        trans->set_animation(object, GLM_ZUP, -delta_time);
-    if (window_is_key_pressed(window, KEY_F))
-        trans->set_animation(object, GLM_YUP, -delta_time);
-
-    if (window_is_key_pressed(window, KEY_T))
-        trans->set_animation(object, GLM_XUP, -delta_time);
-    if (window_is_key_pressed(window, KEY_G))
-        trans->set_animation(object, GLM_XUP, delta_time);
-
-    if (window_is_key_pressed(window, KEY_Y))
-        trans->set_animation(object, GLM_ZUP, delta_time);
-    if (window_is_key_pressed(window, KEY_H))
-        trans->set_animation(object, GLM_YUP, delta_time);
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (app->trans[i][j]) {
+                t = (float)app->trans[i][j] * delta_time;
+                switch (i) {
+                case TRANSLATE:
+                    trans->translate(object, m3i[j], t);
+                    break;
+                case ROTATE:
+                    trans->rotate(object, m3i[j], t);
+                    break;
+                case ANIMATE:
+                    trans->set_animation(object, m3i[j], t);
+                    break;
+                }
+            }
+        }
+    }
 }

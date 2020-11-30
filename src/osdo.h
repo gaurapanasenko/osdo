@@ -11,8 +11,6 @@
     for(type *item = (type*)(void*)utarray_front(list); item != NULL; \
         item = (type*)(void*)utarray_next(list, item))
 
-enum coord_enum {
-    X, Y, Z,
-};
+enum coord_enum {X = 0, Y = 1, Z = 2};
 
 #endif // OSDO_H

@@ -149,7 +149,8 @@ bool window_alive(Window *window) {
 bool window_pre_loop(Window *window) {
     if (glfwWindowShouldClose(window->window)) return false;
     glfwMakeContextCurrent(window->window);
-    glfwWaitEvents();
+    glfwPollEvents();
+    //glfwWaitEvents();
     window_update_cursor(window);
     glfwGetWindowSize(window->window, window->size, window->size + 1);
     glfwGetFramebufferSize(
@@ -301,7 +302,8 @@ void window_mouse_button_cb(
         }
         win->last_click_time = glfwGetTime();
     }
-    win->mouse_button_cb(win, btn, pressed);
+    if (pressed || action == GLFW_RELEASE)
+        win->mouse_button_cb(win, btn, pressed);
 }
 
 void window_key_cb(GLFWwindow* window, int key, UNUSED int scancode,
@@ -309,5 +311,7 @@ void window_key_cb(GLFWwindow* window, int key, UNUSED int scancode,
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     Window *win = glfwGetWindowUserPointer(window);
-    win->key_cb(win, glfw_key_map[key], action == GLFW_PRESS);
+    bool pressed = action == GLFW_PRESS;
+    if (pressed || action == GLFW_RELEASE)
+        win->key_cb(win, glfw_key_map[key], pressed);
 }

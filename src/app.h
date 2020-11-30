@@ -12,6 +12,12 @@
 #include "model.h"
 #include "window.h"
 
+enum TRANSFORMATIONS {
+    ROTATE    = 0,
+    TRANSLATE = 1,
+    ANIMATE   = 2,
+};
+
 typedef struct App {
     Model *models;
     Shader *shaders;
@@ -20,6 +26,7 @@ typedef struct App {
     Camera camera;
     NkGlfw nkglfw;
     Window window;
+    int trans[3][3];
 
     // buffered data for loop
     mat4 mat4buf, projection, last_camera;
