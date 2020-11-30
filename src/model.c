@@ -3,9 +3,10 @@
 
 #define model_PATH RES_DIR"/%s.odom"
 
-bool model_init(Model *model, const char *name) {
+bool model_init(Model *model, const char *name, Shader *editmode) {
     mesh_subinit(&model->mesh, name);
     mesh_subinit(&model->frame, name);
+    model->editmode = editmode;
     const size_t path_len = strlen(model_PATH);
     const size_t len = strlen(name);
     strcpy(model->name, name);
@@ -66,9 +67,11 @@ void model_del(Model *model) {
 
 void model_draw(Model *model) {
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    mesh_draw(&model->frame);
+    shader_set_vec3(model->editmode, "min_coord", model->min_coord);
+    shader_set_vec3(model->editmode, "max_coord", model->max_coord);
+    mesh_draw(&model->frame, GL_POINTS);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    mesh_draw(&model->mesh);
+    //mesh_draw(&model->mesh);
 }
 
 void part(float a, vec4 p1, vec4 p2, vec4 dest) {
@@ -102,6 +105,26 @@ bool model_generate(Model *model) {
     int j, k, l;
     GLuint verts = 0, verts2 = 0;
     vec4 s[8][8], v[4]; float x = 1.f/7;
+    vec3 min_coord, max_coord;
+    glm_vec3_copy(model->points[0], min_coord);
+    glm_vec3_copy(model->points[0], max_coord);
+    vec4 *point;
+    for (size_t i = 0; i < model->points_size; i++) {
+        point = &model->points[i];
+        glm_vec3_copy(*point, V2[verts2].position);
+        V2[verts2].color[1] = (*point)[2] * 100;
+        V2[verts2].color[3] = 255;
+        E2[verts2] = verts2;
+        verts2++;
+        for (int j = 0; j < 3; j++) {
+            if ((*point)[j] < min_coord[j])
+                min_coord[j] = (*point)[j];
+            if ((*point)[j] > max_coord[j])
+                max_coord[j] = (*point)[j];
+        }
+    }
+    glm_vec3_copy(min_coord, model->min_coord);
+    glm_vec3_copy(max_coord, model->max_coord);
     for (size_t i = 0; i < model->surfaces_size; i++) {
         for (j = 0; j < 8; j++) {
             for (k = 0; k < 8; k++) {
@@ -142,34 +165,6 @@ bool model_generate(Model *model) {
                 E[verts] = verts;
                 verts++;
 
-            }
-        for (j = 0; j < 3; j++)
-            for (k = 0; k < 3; k++) {
-
-        glm_vec3_copy(model->points[model->surfaces[i][j][k]],V2[verts2].position);
-        V2[verts2].color[1] = model->points[model->surfaces[i][j][k]][2] * 100;
-        E2[verts2] = verts2;
-        verts2++;
-        glm_vec3_copy(model->points[model->surfaces[i][j+1][k]],V2[verts2].position);
-        V2[verts2].color[1] = model->points[model->surfaces[i][j+1][k]][2] * 100;
-        E2[verts2] = verts2;
-        verts2++;
-        glm_vec3_copy(model->points[model->surfaces[i][j][k+1]],V2[verts2].position);
-        V2[verts2].color[1] = model->points[model->surfaces[i][j][k+1]][2] * 100;
-        E2[verts2] = verts2;
-        verts2++;
-        glm_vec3_copy(model->points[model->surfaces[i][j+1][k]],V2[verts2].position);
-        V2[verts2].color[1] = model->points[model->surfaces[i][j+1][k]][2] * 100;
-        E2[verts2] = verts2;
-        verts2++;
-        glm_vec3_copy(model->points[model->surfaces[i][j][k+1]],V2[verts2].position);
-        V2[verts2].color[1] = model->points[model->surfaces[i][j][k+1]][2] * 100;
-        E2[verts2] = verts2;
-        verts2++;
-        glm_vec3_copy(model->points[model->surfaces[i][j+1][k+1]],V2[verts2].position);
-        V2[verts2].color[1] = model->points[model->surfaces[i][j+1][k+1]][2] * 100;
-        E2[verts2] = verts2;
-        verts2++;
             }
     }
     mesh_update(mesh, sizei, sizei, V, E);

@@ -26,6 +26,6 @@ void mesh_del(Mesh* mesh);
 void mesh_update(Mesh* mesh, GLsizei vertices_size, GLsizei indices_size, Vertex *vertices, GLuint *indices);
 void mesh_clear(Mesh* mesh);
 
-void mesh_draw(Mesh *mesh);
+void mesh_draw(Mesh *mesh, GLenum mode);
 
 #endif

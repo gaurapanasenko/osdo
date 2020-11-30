@@ -23,18 +23,20 @@ int app_init(App *app) {
     // -------------------------------------
     if (!app_load_shader(app, "simple") ||
             !app_load_shader(app, "textured") ||
-            !app_load_shader(app, "nuklear"))
+            !app_load_shader(app, "nuklear") ||
+            !app_load_shader(app, "editmode"))
         return -1;
 
+    Shader *shader;
+    HASH_FIND_STR(app->shaders, "editmode", shader);
+
     Model *model = malloc(sizeof(Model));
-    model_init(model, "test");
+    model_init(model, "test", shader);
     model_generate(model);
     HASH_ADD_STR(app->models, name, model);
 
     // load objects
     // ------------
-    Shader *shader;
-    HASH_FIND_STR(app->shaders, "simple", shader);
     if (shader == NULL)
         return -1;
     Object object;
@@ -71,7 +73,7 @@ void app_del(App *app) {
 int app_loop(App *app) {
     Scene* scene = &app->scene;
     Shader *sh;
-    HASH_FIND_STR(app->shaders, "simple", sh);
+    HASH_FIND_STR(app->shaders, "editmode", sh);
     struct nk_context *ctx = &app->nkglfw.context;
     struct nk_colorf bg;
     bg.r = 0.8f; bg.g = 0.9f; bg.b = 0.8f; bg.a = 1.0f;
@@ -222,10 +224,15 @@ int app_loop(App *app) {
         // camera/view transformation
         camera_get_mat4((void*)&app->camera, app->last_camera);
         shader_set_mat4(sh, "camera", app->last_camera);
+        shader_set_vec2(sh, "vp", (vec2){(float)app->window.size[0], (float)app->window.size[1]});
 
         trans->rotate_all(object, rotation);
 
-        glPointSize(10);
+        //glEnable(GL_BLEND);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glAlphaFunc(GL_GREATER, 0.0f);
+        //glEnable(GL_ALPHA_TEST);
+        glPointSize(50);
         if (!scene->wireframe)
             glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
         // render the loaded models

@@ -3,6 +3,7 @@
 
 #include "osdo.h"
 
+#include "shader.h"
 #include "mesh.h"
 
 typedef size_t surface_t[4][4];
@@ -13,10 +14,12 @@ typedef struct Model {
     vec4 *points;
     surface_t *surfaces;
     Mesh mesh, frame;
+    Shader *editmode;
+    vec3 min_coord, max_coord;
     UT_hash_handle hh;
 } Model;
 
-bool model_init(Model *model, const char *name);
+bool model_init(Model *model, const char *name, Shader *editmode);
 
 void model_del(Model *model);
 

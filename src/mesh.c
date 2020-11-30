@@ -94,11 +94,11 @@ void mesh_init(Mesh* mesh, const char *name) {
     mesh_subinit(mesh, name);
 }
 
-void mesh_draw(Mesh *mesh) {
+void mesh_draw(Mesh *mesh, GLenum mode) {
     glBindVertexArray(mesh->vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
     glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-    glDrawElements(GL_TRIANGLES, mesh->indices_size,
+    glDrawElements(mode, mesh->indices_size,
                    GL_UNSIGNED_INT, 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
