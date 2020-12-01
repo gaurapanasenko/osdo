@@ -151,7 +151,6 @@ bool window_pre_loop(Window *window) {
     glfwMakeContextCurrent(window->window);
     glfwPollEvents();
     //glfwWaitEvents();
-    window_update_cursor(window);
     glfwGetWindowSize(window->window, window->size, window->size + 1);
     glfwGetFramebufferSize(
                 window->window, window->display, window->display + 1);
@@ -195,13 +194,10 @@ bool window_is_mouse_caputed(Window *window) {
     return window->mouse_capute;
 }
 
-void window_set_mouse_capute(Window *window, bool capute) {
-    window->mouse_capute = capute;
-}
-
 void window_grab_mouse(Window *window, bool grab) {
+    window->mouse_capute = grab;
     glfwSetInputMode(window->window, GLFW_CURSOR,
-                     grab ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_NORMAL);
+                     grab ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
 }
 
@@ -214,19 +210,13 @@ bool window_is_mouse_pressed(Window *window, enum BUTTONS key) {
                 window->window, btn_glfw_map[key]) == GLFW_PRESS;
 }
 
-int *window_get_cursor(Window *window) {
-    return window->cursor;
-}
-void window_update_cursor(Window *window) {
-    GLdouble c[2];
-    glfwGetCursorPos(window->window, c, c + 1);
-    window->cursor[0] = (int)c[0]; window->cursor[1] = (int)c[1];
+void window_get_cursor(Window *window, vec2 dest) {
+    glm_vec2_copy(window->cursor, dest);
 }
 
-void window_set_cursor(Window *window, int coords[2]) {
+void window_set_cursor(Window *window, vec2 coords) {
     glfwSetCursorPos(window->window, (double)coords[0], (double)coords[1]);
-    window->cursor[0] = coords[0];
-    window->cursor[1] = coords[1];
+    glm_vec2_copy(coords, window->cursor);
 }
 
 int *window_get_size(Window *window) {
@@ -279,10 +269,10 @@ void window_scroll_cb(
 void window_mouse_motion_cb(
         struct GLFWwindow* window, double xpos, double ypos) {
     Window *win = glfwGetWindowUserPointer(window);
-    int offset[] = {(int)xpos - win->cursor[0],
-                    (int)ypos - win->cursor[1]};
-    win->cursor[0] = (int)xpos; win->cursor[1] = (int)ypos;
-    win->mouse_motion_cb(win, win->cursor, offset);
+    vec2 pos = {(float)xpos, (float)ypos}, offset;
+    glm_vec2_sub(pos, win->cursor, offset);
+    glm_vec2_copy(pos, win->cursor);
+    win->mouse_motion_cb(win, pos, offset);
 }
 
 void window_char_cb(GLFWwindow* window, unsigned int codepoint) {

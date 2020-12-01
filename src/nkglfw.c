@@ -36,7 +36,7 @@ void nk_glfw_init(NkGlfw* nkglfw, Window *window, Shader *shader) {
     nkglfw->context.clip.userdata = nk_handle_ptr(window);
 
     nk_buffer_init_default(&nkglfw->cmds);
-    mesh_subinit(&nkglfw->mesh, "nuklear");
+    mesh_subinit(&nkglfw->mesh);
     nkglfw->shader = shader;
     nkglfw->window = window;
     struct nk_font_atlas *atlas;
@@ -201,17 +201,9 @@ void nk_gflw_scroll_callback(NkGlfw* nkglfw, double xoff, double yoff) {
 }
 
 void nk_glfw_mouse_callback(
-        NkGlfw* nkglfw, int pos[2], UNUSED int offset[2]) {
+        NkGlfw* nkglfw, vec2 pos, UNUSED vec2 offset) {
     struct nk_context *ctx = &nkglfw->context;
-    nk_input_motion(ctx, pos[0], pos[1]);
-    if (ctx->input.mouse.grabbed) {
-        window_set_cursor(
-                    nkglfw->window,
-                    (int[2]){(int)ctx->input.mouse.prev.x,
-                    (int)ctx->input.mouse.prev.y});
-        ctx->input.mouse.pos.x = ctx->input.mouse.prev.x;
-        ctx->input.mouse.pos.y = ctx->input.mouse.prev.y;
-    }
+    nk_input_motion(ctx, (int)pos[0], (int)pos[1]);
 }
 
 void nk_glfw_char_callback(NkGlfw* nkglfw, unsigned int codepoint) {
@@ -220,23 +212,25 @@ void nk_glfw_char_callback(NkGlfw* nkglfw, unsigned int codepoint) {
 
 void nk_glfw_mouse_button_callback(
         NkGlfw* nkglfw, enum BUTTONS button, bool pressed) {
-    int *cursor = window_get_cursor(nkglfw->window);
+    vec2 cursor;
+    window_get_cursor(nkglfw->window, cursor);
+    int c[2] = {(int)cursor[0], (int)cursor[1]};
     struct nk_context *ctx = &nkglfw->context;
     switch (button) {
     case MOUSE_BUTTON_LEFT:
-        nk_input_button(ctx, NK_BUTTON_LEFT, cursor[0], cursor[1],
+        nk_input_button(ctx, NK_BUTTON_LEFT, c[0], c[1],
                 pressed);
         break;
     case MOUSE_BUTTON_MIDDLE:
-        nk_input_button(ctx, NK_BUTTON_MIDDLE, cursor[0], cursor[1],
+        nk_input_button(ctx, NK_BUTTON_MIDDLE, c[0], c[1],
                 pressed);
         break;
     case MOUSE_BUTTON_RIGHT:
-        nk_input_button(ctx, NK_BUTTON_RIGHT, cursor[0], cursor[1],
+        nk_input_button(ctx, NK_BUTTON_RIGHT, c[0], c[1],
                 pressed);
         break;
     case MOUSE_BUTTON_DOUBLE:
-        nk_input_button(ctx, NK_BUTTON_DOUBLE, cursor[0], cursor[1],
+        nk_input_button(ctx, NK_BUTTON_DOUBLE, c[0], c[1],
                 pressed);
         break;
     }

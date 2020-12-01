@@ -40,7 +40,7 @@ struct Window;
 typedef void (*scroll_cb_t)(
         struct Window *window, GLdouble xoffset, GLdouble yoffset);
 typedef void (*mouse_motion_cb_t)(
-        struct Window *window, int pos[2], int offset[2]);
+        struct Window *window, vec2 pos, vec2 offset);
 typedef void (*char_cb_t)(
         struct Window *window, unsigned int codepoint);
 typedef void (*mouse_button_cb_t)(
@@ -54,8 +54,7 @@ typedef struct Window {
 
     // screen size
     int size[2], display[2];
-    vec2 scale;
-    int cursor[2];
+    vec2 scale, cursor;
     bool mouse_capute;
     double last_click_time, current_time, last_time, delta_time;
 
@@ -84,15 +83,13 @@ const char * window_get_clipboard(Window *window);
 void window_set_clipboard(Window *window, const char * str);
 
 bool window_is_mouse_caputed(Window *window);
-void window_set_mouse_capute(Window *window, bool capute);
 void window_grab_mouse(Window *window, bool grab);
 
 bool window_is_key_pressed(Window *window, enum KEYS key);
 bool window_is_mouse_pressed(Window *window, enum BUTTONS key);
 
-int *window_get_cursor(Window *window);
-void window_update_cursor(Window *window);
-void window_set_cursor(Window *window, int coords[2]);
+void window_get_cursor(Window *window, vec2 dest);
+void window_set_cursor(Window *window, vec2 coords);
 
 int *window_get_size(Window *window);
 int *window_get_display(Window *window);

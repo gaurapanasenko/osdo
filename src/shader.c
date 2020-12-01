@@ -89,7 +89,7 @@ bool shader_compile(const char* vertexCode, const char* fragmentCode,
     return true;
 }
 
-bool shader_init(const char* name, Shader *shader) {
+bool shader_init(Shader *shader, const char* name) {
     // 1. retrieve the vertex/fragment source code from filePath
     const size_t path_len = strlen(VERTEX_PATH);
     const size_t len = strlen(name);
@@ -128,8 +128,22 @@ bool shader_init(const char* name, Shader *shader) {
     return true;
 }
 
+Shader *shader_create(const char *name) {
+    Shader *shader = calloc(1, sizeof(Shader));
+    if (shader && !shader_init(shader, name)) {
+        free(shader);
+        return NULL;
+    }
+    return shader;
+}
+
 void shader_del(Shader *shader) {
     glDeleteProgram(shader->shader);
+}
+
+void shader_free(Shader *shader) {
+    shader_del(shader);
+    free(shader);
 }
 
 void shader_use(Shader *shader) {

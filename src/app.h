@@ -26,6 +26,7 @@ typedef struct App {
     Camera camera;
     NkGlfw nkglfw;
     Window window;
+    bool interactive_mode;
     int trans[3][3];
 
     // buffered data for loop
@@ -42,7 +43,7 @@ int app_loop(App *app);
 bool app_load_shader(App *app, const char *name);
 
 void app_scroll(Window* window, GLdouble xoffset, GLdouble yoffset);
-void app_mouse(Window* window, int pos[2], int offset[2]);
+void app_mouse(Window* window, vec2 pos, vec2 offset);
 void app_char_callback(Window* window, unsigned int codepoint);
 void app_mouse_button_callback(
         Window *window, enum BUTTONS button, bool pressed);

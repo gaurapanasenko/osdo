@@ -1,36 +1,44 @@
-#ifndef model_H
-#define model_H
+#ifndef MODEL_H
+#define MODEL_H
 
 #include "osdo.h"
 
-#include "shader.h"
-#include "mesh.h"
+typedef union __attribute__((transparent_union)) model_t {
+   struct Beziator *beziator;
+   struct Mesh *mesh;
+} model_t;
 
-typedef size_t surface_t[4][4];
+typedef void (*draw_cb)(model_t model);
+typedef bool (*generate_cb)(model_t model);
+typedef void (*free_cb)(model_t model);
+
+typedef struct ModelType {
+    draw_cb draw;
+    generate_cb generate;
+    free_cb free;
+} ModelType;
 
 typedef struct Model {
     char name[64];
-    size_t points_size, surfaces_size;
-    vec4 *points;
-    surface_t *surfaces;
-    Mesh mesh, frame;
-    Shader *editmode;
-    vec3 min_coord, max_coord;
+    model_t model;
+    const ModelType *type;
     UT_hash_handle hh;
 } Model;
-
-bool model_init(Model *model, const char *name, Shader *editmode);
-
-void model_del(Model *model);
-
-void model_draw(Model *model);
-
-bool model_generate(Model *model);
-
-void model_save(Model *model);
 
 static const UT_icd model_icd = {
     sizeof(Model), NULL, NULL, NULL
 };
 
-#endif // model_H
+void model_init(Model* model, const char *name,
+                model_t model_child, const ModelType *type);
+
+Model *model_create(const char *name, model_t model,
+                    const ModelType *type);
+
+void model_draw(Model* model);
+
+void model_generate(Model *model);
+
+void model_free(Model *model);
+
+#endif // MODEL_H

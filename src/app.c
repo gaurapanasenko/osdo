@@ -2,11 +2,12 @@
 #include "app.h"
 #include "conf.h"
 #include "shader.h"
-#include "model.h"
+#include "beziator.h"
 
 int app_init(App *app) {
     app->models = NULL;
     app->shaders = NULL;
+    app->interactive_mode = false;
     window_init(&app->window);
     utarray_new(app->objects, &object_icd);
     app->camera = CAMERA;
@@ -23,6 +24,7 @@ int app_init(App *app) {
     // -------------------------------------
     if (!app_load_shader(app, "simple") ||
             !app_load_shader(app, "textured") ||
+            !app_load_shader(app, "lighting") ||
             !app_load_shader(app, "nuklear") ||
             !app_load_shader(app, "editmode"))
         return -1;
@@ -30,9 +32,9 @@ int app_init(App *app) {
     Shader *shader;
     HASH_FIND_STR(app->shaders, "editmode", shader);
 
-    Model *model = malloc(sizeof(Model));
-    model_init(model, "test", shader);
-    model_generate(model);
+    Beziator *beziator = beziator_create("test", shader);
+    Model *model = model_create("test", beziator, &beziator_type);
+    beziator_generate(beziator);
     HASH_ADD_STR(app->models, name, model);
 
     // load objects
@@ -57,31 +59,31 @@ void app_del(App *app) {
     scene_del(&app->scene);
     utarray_free(app->objects);
 
-    {Model *i, *tmp;
-    HASH_ITER(hh, app->models, i, tmp) {
-        model_del(i);
-        free(i);
-    }}
+    {
+        Model *i, *tmp;
+        HASH_ITER(hh, app->models, i, tmp)
+            model_free(i);
+    }
 
-    {Shader *i, *tmp;
-    HASH_ITER(hh, app->shaders, i, tmp) {
-        shader_del(i);
-        free(i);
-    }}
+    {
+        Shader *i, *tmp;
+        HASH_ITER(hh, app->shaders, i, tmp)
+            shader_free(i);
+    }
 }
 
 int app_loop(App *app) {
     Scene* scene = &app->scene;
-    Shader *sh;
-    HASH_FIND_STR(app->shaders, "editmode", sh);
+    Shader *sh, *sh2;
+    HASH_FIND_STR(app->shaders, "lighting", sh);
+    HASH_FIND_STR(app->shaders, "simple", sh2);
     struct nk_context *ctx = &app->nkglfw.context;
     struct nk_colorf bg;
     bg.r = 0.8f; bg.g = 0.9f; bg.b = 0.8f; bg.a = 1.0f;
     char text[128];
-    void *object;
     vec4 *position;
     vec3 rotation, *animation;
-    Transformable *trans;
+    Bijective bijective;
 
     // render loop
     // -----------
@@ -95,15 +97,15 @@ int app_loop(App *app) {
         else snprintf(text, 128, "Camera");
 
         if (scene->active) {
-            object = (void*)utarray_eltptr(
+            bijective.bijective.object = (void*)utarray_eltptr(
                          scene->objects, (unsigned)scene->active - 1);
-            trans = &((Object*)object)->transformable;
+            bijective.type = &object_bijective;
         } else {
-            object = (void*)&app->camera;
-            trans = &((Camera*)object)->transformable;
+            bijective.bijective.camera = &app->camera;
+            bijective.type = &camera_bijective;
         }
-        trans->get_position(object, &position);
-        trans->get_animation(object, &animation);
+        bijective_get_position(bijective, &position);
+        bijective_get_animation(bijective, &animation);
         glm_vec3_copy(GLM_VEC3_ZERO, rotation);
 
         /* GUI */
@@ -164,31 +166,31 @@ int app_loop(App *app) {
         nk_end(ctx);
 
         if (scene->active) {
-            Model *model = app->models;
+            Beziator *beziator = app->models->model.beziator;
             if (nk_begin(ctx, "Bezier mesh", nk_rect(267, 4, 256, 512),
                          NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
                          NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
                 nk_layout_row_dynamic(ctx, 25, 1);
                 if (nk_button_label(ctx, "Regenerate"))
-                    model_generate(model);
+                    beziator_generate(beziator);
                 nk_layout_row_dynamic(ctx, 25, 1);
                 nk_label(ctx, "Control points:", NK_TEXT_LEFT);
-                for (size_t i = 0; i < model->points_size; i++) {
+                for (size_t i = 0; i < beziator->points_size; i++) {
                     nk_layout_row_dynamic(ctx, 25, 3);
-                    nk_property_float(ctx, "#X:", -FLT_MAX, model->points[i],
+                    nk_property_float(ctx, "#X:", -FLT_MAX, beziator->points[i],
                                       FLT_MAX, 0.1f, 0.1f);
-                    nk_property_float(ctx, "#Y:", -FLT_MAX, model->points[i] + 1,
+                    nk_property_float(ctx, "#Y:", -FLT_MAX, beziator->points[i] + 1,
                                       FLT_MAX, 0.1f, 0.1f);
-                    nk_property_float(ctx, "#Z:", -FLT_MAX, model->points[i] + 2,
+                    nk_property_float(ctx, "#Z:", -FLT_MAX, beziator->points[i] + 2,
                                       FLT_MAX, 0.1f, 0.1f);
                 }
                 nk_layout_row_dynamic(ctx, 25, 1);
                 nk_label(ctx, "Surfaces:", NK_TEXT_LEFT);
-                for (size_t i = 0; i < model->surfaces_size; i++) {
+                for (size_t i = 0; i < beziator->surfaces_size; i++) {
                     for (size_t j = 0; j < 4; j++) {
                         nk_layout_row_dynamic(ctx, 25, 4);
                         for (size_t k = 0; k < 4; k++) {
-                            nk_property_int(ctx, "#", 0, (int*)(model->surfaces[i][j] + k),
+                            nk_property_int(ctx, "#", 0, (int*)(beziator->surfaces[i][j] + k),
                                               100, 1, 1);
                         }
                     }
@@ -218,15 +220,26 @@ int app_loop(App *app) {
         // pass projection matrix to shader
         glm_perspective(45.f * (GLfloat) M_RAD,
                         window_get_resolution(&app->window),
-                        0.1f, 100.0f, app->projection);
+                        0.01f, 100.0f, app->projection);
         shader_set_mat4(sh, "projection", app->projection);
+        shader_set_float(sh, "materialShininess", 32.0f);
+        shader_set_vec3(sh, "objectColor", (vec3){0,1,0});
+
+        // directional light
+        shader_set_vec3f(sh, "dirLight.direction", 0.0f, -1.0f, 0.0f);
+        shader_set_vec3f(sh, "dirLight.ambient", 0.0f, 0.0f, 0.0f);
+        shader_set_vec3f(sh, "dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+        shader_set_vec3f(sh, "dirLight.specular", 1.f, 1.f, 1.f);
 
         // camera/view transformation
         camera_get_mat4((void*)&app->camera, app->last_camera);
+        shader_set_vec3(sh, "viewPos", app->camera.position);
+        shader_set_vec3f(sh, "objectColor", 0.4f, 0.8f, 0.4f);
+        shader_set_float(sh, "materialShininess", 32.0f);
         shader_set_mat4(sh, "camera", app->last_camera);
         shader_set_vec2(sh, "vp", (vec2){(float)app->window.size[0], (float)app->window.size[1]});
 
-        trans->rotate_all(object, rotation);
+        bijective_rotate_all(bijective, rotation);
 
         //glEnable(GL_BLEND);
         //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -249,9 +262,8 @@ int app_loop(App *app) {
 }
 
 bool app_load_shader(App *app, const char *name) {
-    Shader *shader;
-    shader = malloc(sizeof(Shader));
-    if (!shader_init(name, shader)) {
+    Shader *shader = shader_create(name);
+    if (shader == NULL) {
         printf("Failed to compile shaders.\n");
         return false;
     }
@@ -264,11 +276,11 @@ void app_scroll(Window* window, GLdouble xoffset, GLdouble yoffset) {
     nk_gflw_scroll_callback(&app->nkglfw, xoffset, yoffset);
 }
 
-void app_mouse(Window* window, int pos[2], int offset[2]) {
+void app_mouse(Window* window, vec2 pos, vec2 offset) {
     App *app = window_get_user_pointer(window);
     GLfloat xoffset = (GLfloat)offset[0], yoffset = (GLfloat)offset[1];
 
-    if (window->mouse_capute) {
+    if (app->interactive_mode) {
         xoffset *= SENSITIVITY;
         yoffset *= SENSITIVITY;
 
@@ -346,12 +358,11 @@ void app_key(Window* window, enum KEYS key, bool pressed) {
             break;
         case KEY_B:
         {
-            bool capute = window_is_mouse_caputed(window);
-            if (capute)
+            app->interactive_mode = !app->interactive_mode;
+            if (!app->interactive_mode)
                 window_grab_mouse(window, false);
             else
                 window_grab_mouse(window, true);
-            window_set_mouse_capute(window, capute);
         }
             break;
         default:
@@ -390,17 +401,16 @@ static mat3 m3i = GLM_MAT3_IDENTITY_INIT;
 void app_process_input(App *app) {
     Window *window = &app->window;
     Scene *scene = &app->scene;
-    void *object;
-    Transformable *trans;
+    Bijective bijective;
     float t;
     GLfloat delta_time = (GLfloat)window_get_delta_time(window);
     if (scene->active) {
-        object = (void*)utarray_eltptr(
+        bijective.bijective.object = (void*)utarray_eltptr(
                      scene->objects, (unsigned)scene->active - 1);
-        trans = &((Object*)object)->transformable;
+        bijective.type = &object_bijective;
     } else {
-        object = (void*)&app->camera;
-        trans = &((Camera*)object)->transformable;
+        bijective.bijective.camera = &app->camera;
+        bijective.type = &camera_bijective;
     }
 
     if (window_is_key_pressed(window, KEY_LEFT_CONTROL))
@@ -412,13 +422,13 @@ void app_process_input(App *app) {
                 t = (float)app->trans[i][j] * delta_time;
                 switch (i) {
                 case TRANSLATE:
-                    trans->translate(object, m3i[j], t);
+                    bijective_translate(bijective, m3i[j], t);
                     break;
                 case ROTATE:
-                    trans->rotate(object, m3i[j], t);
+                    bijective_rotate(bijective, m3i[j], t);
                     break;
                 case ANIMATE:
-                    trans->set_animation(object, m3i[j], t);
+                    bijective_set_animation(bijective, m3i[j], t);
                     break;
                 }
             }

@@ -36,7 +36,7 @@ void nk_glfw_end_input(NkGlfw* nkglfw);
 void nk_glfw_render(NkGlfw* nkglfw);
 
 void nk_gflw_scroll_callback(NkGlfw* nkglfw, double xoff, double yoff);
-void nk_glfw_mouse_callback(NkGlfw *nkglfw, int pos[2], int offset[2]);
+void nk_glfw_mouse_callback(NkGlfw *nkglfw, vec2 pos, vec2 offset);
 void nk_glfw_char_callback(NkGlfw* nkglfw, unsigned int codepoint);
 void nk_glfw_mouse_button_callback(
         NkGlfw* nkglfw, enum BUTTONS button, bool pressed);

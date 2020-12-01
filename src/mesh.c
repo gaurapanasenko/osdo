@@ -2,8 +2,7 @@
 #include "mesh.h"
 #include "conf.h"
 
-void mesh_subinit(Mesh *mesh, const char *name) {
-    strcpy(mesh->name, name);
+void mesh_subinit(Mesh *mesh) {
     mesh->vertices_size = 0;
     mesh->indices_size = 0;
     mesh->vertices = NULL;
@@ -83,7 +82,7 @@ void mesh_clear(Mesh* mesh) {
 }
 
 
-void mesh_init(Mesh* mesh, const char *name) {
+void mesh_init(Mesh* mesh) {
     //strcpy(mesh->name, name);
     //Vertex *V = (Vertex*)malloc(sizeof(EXAMPLE_CUBE_VERTEX));
     //GLuint *E = (GLuint*)malloc(sizeof(EXAMPLE_CUBE_INDICIES));
@@ -91,10 +90,16 @@ void mesh_init(Mesh* mesh, const char *name) {
     //memcpy(E, EXAMPLE_CUBE_INDICIES, sizeof(EXAMPLE_CUBE_INDICIES));
     //mesh_subinit(mesh, sizeof(EXAMPLE_CUBE_VERTEX)/sizeof(Vertex),
     //             sizeof(EXAMPLE_CUBE_INDICIES)/sizeof(GLuint), V, E);
-    mesh_subinit(mesh, name);
+    mesh_subinit(mesh);
 }
 
-void mesh_draw(Mesh *mesh, GLenum mode) {
+Mesh *mesh_create(void) {
+    Mesh *mesh = calloc(1, sizeof(Mesh));
+    mesh_init(mesh);
+    return mesh;
+}
+
+void mesh_draw_mode(Mesh *mesh, GLenum mode) {
     glBindVertexArray(mesh->vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
     glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
@@ -106,9 +111,18 @@ void mesh_draw(Mesh *mesh, GLenum mode) {
     glBindVertexArray(0);
 }
 
+void mesh_draw(Mesh *mesh) {
+    mesh_draw_mode(mesh, GL_TRIANGLES);
+}
+
 void mesh_del(Mesh *mesh) {
     glDeleteVertexArrays(1, &mesh->vao);
     glDeleteBuffers(1, &mesh->vbo);
     glDeleteBuffers(1, &mesh->ebo);
     mesh_clear(mesh);
+}
+
+void mesh_free(Mesh* mesh) {
+    mesh_del(mesh);
+    free(mesh);
 }

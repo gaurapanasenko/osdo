@@ -64,14 +64,14 @@ void main()
 
     vec3 result = vec3(0.0);
 
-	if (dirLightOn)
+        //if (dirLightOn)
 		result += CalcDirLight(dirLight, norm, viewDir);
-	if (pointLight1On)
-    	result += CalcPointLight(pointLight1, norm, FragPos, viewDir);
-	if (pointLight2On)
-    	result += CalcPointLight(pointLight2, norm, FragPos, viewDir);
-	if (spotLightOn)
-    	result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
+        //if (pointLight1On)
+        //result += CalcPointLight(pointLight1, norm, FragPos, viewDir);
+        //if (pointLight2On)
+        //result += CalcPointLight(pointLight2, norm, FragPos, viewDir);
+        //if (spotLightOn)
+        //result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
 
     FragColor = vec4(result, 1.0);
 }

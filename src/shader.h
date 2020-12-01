@@ -13,9 +13,11 @@ bool shader_compile(const char* vertexCode, const char* fragmentCode,
                     Shader *shader);
 
 // constructor generates the shader on the fly
-bool shader_init(const char* name, Shader *shader);
+bool shader_init(Shader *shader, const char* name);
+Shader *shader_create(const char* name);
 
 void shader_del(Shader *shader);
+void shader_free(Shader *shader);
 
 // activate the shader
 void shader_use(Shader *shader);
