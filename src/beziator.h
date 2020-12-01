@@ -7,15 +7,14 @@
 #include "mesh.h"
 #include "model.h"
 
-typedef size_t surface_t[4][4];
+typedef vec4 *surface_t[4][4];
 
 typedef struct Beziator {
     size_t points_size, surfaces_size;
     vec4 *points;
     surface_t *surfaces;
-    Mesh mesh, frame, mesh3;
+    Mesh mesh, frame;
     Shader *editmode;
-    vec3 min_coord, max_coord;
     Model model;
 } Beziator;
 
