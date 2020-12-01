@@ -83,17 +83,17 @@ void beziator_draw(Beziator *beziator) {
     //mesh_draw(&beziator->frame, GL_POINTS);
     //mesh_draw_mode(&beziator->frame, GL_LINES);
     mesh_draw_mode(&beziator->mesh3, GL_LINES);
-    mesh_draw_mode(&beziator->mesh, GL_POINTS);
+    mesh_draw_mode(&beziator->mesh, GL_TRIANGLES);
 }
 
-void part(float a, vec4 p1, vec4 p2, vec4 dest) {
-    glm_vec4_copy(GLM_VEC4_BLACK, dest);
-    glm_vec4_muladds(p1, a, dest);
-    glm_vec4_muladds(p2, 1.f - a, dest); //p1*a + p2*(1-a)
+void part(float a, vec3 p1, vec3 p2, vec3 dest) {
+    glm_vec3_copy(GLM_VEC3_ZERO, dest);
+    glm_vec3_muladds(p1, a, dest);
+    glm_vec3_muladds(p2, 1.f - a, dest); //p1*a + p2*(1-a)
 }
 
-void bezier(float a, vec4 p1, vec4 p2, vec4 p3, vec4 p4, vec4 dest, vec4 dest2, vec4 dest3) {
-    vec4 pp1, pp2, pp3, ppp1, ppp2;
+void bezier(float a, vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec3 dest, vec3 dest2, vec3 dest3) {
+    vec4 pp1, pp2, pp3;// ppp1, ppp2;
     part(a, p1, p2, pp1);
     part(a, p2, p3, pp2);
     part(a, p3, p4, pp3);
@@ -119,14 +119,13 @@ bool beziator_generate(Beziator *beziator) {
     GLuint *E3 = (GLuint*)calloc(size, sizeof(GLuint));
     int j, k, l;
     GLuint verts = 0, verts3 = 0;// verts2 = 0;
-    vec4 s[8][8], s2[8][8]; float x = 1.f/3;
-    vec3 min_coord, max_coord, norms[8][8];
+    float x = 1.f/7;
+    vec3 s[8][8], s2[8][8], min_coord, max_coord, norms[8][8];
     glm_vec3_copy(beziator->points[0], min_coord);
     glm_vec3_copy(beziator->points[0], max_coord);
     vec4 *point;
     surface_t *surface;
-    mat3 m3b;
-    mat4 u[5], u2[5];
+    mat3 m3b, u[9], u2[9];
     for (size_t i = 0; i < beziator->points_size; i++) {
         point = &beziator->points[i];
         glm_vec3_copy(*point, V2[i].position);
@@ -209,31 +208,29 @@ bool beziator_generate(Beziator *beziator) {
             glm_vec3_add(V2[tmp].normal, m3b[2], V2[tmp].normal);
         }
 
-        for (j = 0; j < 4; j++) {
-            for (k = 0; k < 4; k++) {
+        for (j = 0; j < 8; j++) {
+            for (k = 0; k < 8; k++) {
                 for (l = 0; l < 4; l++) {
                     bezier((float)j*x, beziator->points[(*surface)[0][l]],
                             beziator->points[(*surface)[1][l]],
                             beziator->points[(*surface)[2][l]],
                             beziator->points[(*surface)[3][l]],
                             u[l][0], u[l][1], u[l][2]);
-                    bezier((float)j*x, beziator->points[(*surface)[l][0]],
+                    bezier((float)k*x, beziator->points[(*surface)[l][0]],
                             beziator->points[(*surface)[l][1]],
                             beziator->points[(*surface)[l][2]],
                             beziator->points[(*surface)[l][3]],
                             u2[l][0], u2[l][1], u2[l][2]);
                 }
                 bezier((float)k*x, u[0][0], u[1][0], u[2][0], u[3][0], s[j][k], u[4][1], u[4][2]);
-                bezier((float)k*x, u2[0][0], u2[1][0], u2[2][0], u2[3][0], s[j][k], u2[4][1], u2[4][2]);
-                glm_vec4_sub(u[4][1], u[4][2], u[4][0]);
-                glm_vec4_sub(u2[4][1], u2[4][2], u2[4][0]);
-                glm_normalize(u[4][0]);
-                glm_normalize(u2[4][0]);
-                glm_cross(u[4][0], u2[4][0], norms[j][k]);
+                bezier((float)j*x, u2[0][0], u2[1][0], u2[2][0], u2[3][0], s2[j][k], u2[4][1], u2[4][2]);
+                glm_vec3_sub(u[4][1], u[4][2], u[4][0]);
+                glm_vec3_sub(u2[4][1], u2[4][2], u2[4][0]);
+                glm_cross(u2[4][0], u[4][0], norms[j][k]);
                 printf("%f %f %f\n%f %f %f\n%f %f %f\n\n",
                         u[4][0][0], u[4][0][1], u[4][0][2],
-                        u2[4][0][0], u2[4][0][1], u2[4][0][2],
-                        norms[j][k][0], norms[j][k][1], norms[j][k][2]);
+                        u[4][1][0], u[4][1][1], u[4][1][2],
+                        u[4][2][0], u[4][2][1], u[4][2][2]);
                 //glm_vec3_copy(u2[4][0], norms[j][k]);
                 //glm_vec3_cross(u2[4], u[4], norms[j][k]);
                 /*glm_vec3_copy(u[4][1], V3[verts3].position);
@@ -257,8 +254,9 @@ bool beziator_generate(Beziator *beziator) {
                 verts3++;
             }
         }
-        for (j = 0; j < 3; j++)
-            for (k = 0; k < 3; k++) {
+
+        for (j = 0; j < 7; j++)
+            for (k = 0; k < 7; k++) {
                 glm_vec3_copy(s[j][k],V[verts].position);
                 V[verts].color[1] = 255;
                 /*glm_vec3_sub(s[j][k], s[j+1][k], m3b[0]);

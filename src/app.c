@@ -256,7 +256,7 @@ int app_loop(App *app) {
         //glEnable(GL_ALPHA_TEST);
         glPointSize(10);
         if (!scene->wireframe)
-            glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         // render the loaded models
         for_each_utarr (Object, i, scene->objects){
             object_draw(i, app->mat4buf,
