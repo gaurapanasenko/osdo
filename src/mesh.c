@@ -2,7 +2,7 @@
 #include "mesh.h"
 #include "conf.h"
 
-void mesh_subinit(Mesh *mesh) {
+void mesh_init(Mesh *mesh) {
     mesh->vertices_size = 0;
     mesh->indices_size = 0;
     mesh->vertices = NULL;
@@ -82,15 +82,13 @@ void mesh_clear(Mesh* mesh) {
 }
 
 
-void mesh_init(Mesh* mesh) {
-    //strcpy(mesh->name, name);
-    //Vertex *V = (Vertex*)malloc(sizeof(EXAMPLE_CUBE_VERTEX));
-    //GLuint *E = (GLuint*)malloc(sizeof(EXAMPLE_CUBE_INDICIES));
-    //memcpy(V, EXAMPLE_CUBE_VERTEX, sizeof(EXAMPLE_CUBE_VERTEX));
-    //memcpy(E, EXAMPLE_CUBE_INDICIES, sizeof(EXAMPLE_CUBE_INDICIES));
-    //mesh_subinit(mesh, sizeof(EXAMPLE_CUBE_VERTEX)/sizeof(Vertex),
-    //             sizeof(EXAMPLE_CUBE_INDICIES)/sizeof(GLuint), V, E);
-    mesh_subinit(mesh);
+void mesh_cube_update(Mesh* mesh) {
+    Vertex *V = (Vertex*)malloc(sizeof(EXAMPLE_CUBE_VERTEX));
+    GLuint *E = (GLuint*)malloc(sizeof(EXAMPLE_CUBE_INDICIES));
+    memcpy(V, EXAMPLE_CUBE_VERTEX, sizeof(EXAMPLE_CUBE_VERTEX));
+    memcpy(E, EXAMPLE_CUBE_INDICIES, sizeof(EXAMPLE_CUBE_INDICIES));
+    mesh_update(mesh, sizeof(EXAMPLE_CUBE_VERTEX)/sizeof(Vertex),
+                 sizeof(EXAMPLE_CUBE_INDICIES)/sizeof(GLuint), V, E);
 }
 
 Mesh *mesh_create(void) {

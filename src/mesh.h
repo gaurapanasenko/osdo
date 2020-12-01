@@ -18,8 +18,8 @@ typedef struct Mesh {
     GLuint vao, vbo, ebo;
 } Mesh;
 
-void mesh_subinit(Mesh* mesh);
 void mesh_init(Mesh* mesh);
+void mesh_cube_update(Mesh* mesh);
 Mesh *mesh_create(void);
 
 void mesh_del(Mesh* mesh);

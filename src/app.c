@@ -31,19 +31,28 @@ int app_init(App *app) {
 
     Shader *shader;
     HASH_FIND_STR(app->shaders, "editmode", shader);
-
-    Beziator *beziator = beziator_create("test", shader);
-    Model *model = model_create("test", beziator, &beziator_type);
-    beziator_generate(beziator);
-    HASH_ADD_STR(app->models, name, model);
-
-    // load objects
-    // ------------
     if (shader == NULL)
         return -1;
-    Object object;
-    object_init(&object, model, shader);
-    utarray_push_back(app->objects, &object);
+
+    {
+        model_t model_ch;
+        Model *model;
+        Object object;
+
+        model_ch.beziator = beziator_create("test", shader);
+        model = model_create("test", model_ch, &beziator_type);
+        beziator_generate(model_ch.beziator);
+        object_init(&object, model, shader);
+        HASH_ADD_STR(app->models, name, model);
+        utarray_push_back(app->objects, &object);
+
+        model_ch.mesh = mesh_create();
+        mesh_cube_update(model_ch.mesh);
+        model = model_create("cube", model_ch, &mesh_type);
+        object_init(&object, model, shader);
+        HASH_ADD_STR(app->models, name, model);
+        utarray_push_back(app->objects, &object);
+    }
 
     scene_init(&app->scene, app->objects);
     camera_translate(&app->camera, BASIS0POS);
@@ -75,7 +84,7 @@ void app_del(App *app) {
 int app_loop(App *app) {
     Scene* scene = &app->scene;
     Shader *sh, *sh2;
-    HASH_FIND_STR(app->shaders, "lighting", sh);
+    HASH_FIND_STR(app->shaders, "editmode", sh);
     HASH_FIND_STR(app->shaders, "simple", sh2);
     struct nk_context *ctx = &app->nkglfw.context;
     struct nk_colorf bg;
@@ -245,7 +254,7 @@ int app_loop(App *app) {
         //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         //glAlphaFunc(GL_GREATER, 0.0f);
         //glEnable(GL_ALPHA_TEST);
-        glPointSize(50);
+        glPointSize(10);
         if (!scene->wireframe)
             glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
         // render the loaded models

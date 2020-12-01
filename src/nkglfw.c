@@ -36,7 +36,7 @@ void nk_glfw_init(NkGlfw* nkglfw, Window *window, Shader *shader) {
     nkglfw->context.clip.userdata = nk_handle_ptr(window);
 
     nk_buffer_init_default(&nkglfw->cmds);
-    mesh_subinit(&nkglfw->mesh);
+    mesh_init(&nkglfw->mesh);
     nkglfw->shader = shader;
     nkglfw->window = window;
     struct nk_font_atlas *atlas;
