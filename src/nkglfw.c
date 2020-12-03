@@ -53,7 +53,7 @@ void nk_glfw_init(NkGlfw* nkglfw, Window *window, Shader *shader) {
     config->circle_segment_count = 22;
     config->curve_segment_count = 22;
     config->arc_segment_count = 22;
-    config->global_alpha = 1.0f;
+    config->global_alpha = .95f;
     config->shape_AA = NK_ANTI_ALIASING_ON;
     config->line_AA = NK_ANTI_ALIASING_ON;
 

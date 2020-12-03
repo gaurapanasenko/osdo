@@ -90,7 +90,9 @@ void beziator_draw(Beziator *beziator) {
     //shader_set_vec3(beziator->editmode, "max_coord", beziator->max_coord);
     mesh_draw_mode(&beziator->frame, GL_POINTS);
     mesh_draw_mode(&beziator->frame, GL_LINES);
+    shader_set_float(beziator->editmode, "alpha", 0.5f);
     mesh_draw_mode(&beziator->mesh, GL_TRIANGLES);
+    shader_set_float(beziator->editmode, "alpha", 1);
 }
 
 
@@ -111,28 +113,29 @@ void bezier_curve_tangent(float a, mat4 points, vec4 dest) {
 void bezier_surface(
         float u, float v, surface_t points, vec4 dest, vec4 normal) {
     mat4 m, res1, res2, res3;
+
     for (int i = 0; i < 4; i++) {
         glm_vec4_copy(*(points[0][i]), m[0]);
         glm_vec4_copy(*(points[1][i]), m[1]);
         glm_vec4_copy(*(points[2][i]), m[2]);
         glm_vec4_copy(*(points[3][i]), m[3]);
         bezier_curve(u, m, res1[i]);
+
         glm_vec4_copy(*(points[i][0]), m[0]);
         glm_vec4_copy(*(points[i][1]), m[1]);
         glm_vec4_copy(*(points[i][2]), m[2]);
         glm_vec4_copy(*(points[i][3]), m[3]);
         bezier_curve(v, m, res2[i]);
     }
+
     bezier_curve(v, res1, dest);
     bezier_curve_tangent(v, res1, res3[1]);
     bezier_curve_tangent(u, res2, res3[3]);
+
     glm_cross(res3[3], res3[1], normal);
 }
 
 bool beziator_generate(Beziator *beziator) {
-    static const bool frame_norms[][4] = {
-        {0, 1, 1, 0},  {1, 1, 1, 1},  {1, 1, 1, 1},  {0, 1, 1, 0},
-    };
     static const int controls_lines[][2] = {
         {0, 0}, {0, 1}, {0, 0}, {1, 1}, {0, 0}, {1, 0},
         {0, 3}, {0, 2}, {0, 3}, {1, 2}, {0, 3}, {1, 3},
@@ -140,6 +143,25 @@ bool beziator_generate(Beziator *beziator) {
         {3, 3}, {3, 2}, {3, 3}, {2, 2}, {3, 3}, {2, 3},
     };
     static const int ctrls_size = sizeof(controls_lines) / sizeof(int[2]);
+    /* // Old variant of config, I leave it for several commits
+    static const uint8_t ALL_SQUARE_LINES[][4] = {
+        {1, 0, 0, 0}, {0, 0, 0, 1}, {0, 1, 1, 1}, {1, 1, 1, 0},
+        {1, 1, 0, 0}, {0, 0, 1, 1}, {1, 0, 0, 1}, {0, 1, 1, 0}
+    };*/
+    static const uint8_t SQUARE_TYPES[][10][2] = {
+        {{0, 0}, {0, 1}, {1, 1}, {0, 0}, {8, 8},
+         {1, 1}, {1, 0}, {0, 0}, {1, 1}, {9, 9}},
+        {{0, 0}, {0, 1}, {1, 1}, {1, 0}, {0, 0}, {9, 9}},
+        {{1, 0}, {0, 0}, {0, 1}, {1, 0}, {8, 8},
+         {0, 1}, {1, 1}, {1, 0}, {0, 1}, {9, 9}},
+        /* // And again old variant of config
+        {1, 2, 4, 1, 8, 0, 5, 3, 0, 9},
+        {0, 1, 2, 3, 0, 9},
+        {0, 1, 5, 0, 8, 2, 3, 5, 2, 9},*/
+    };
+    static const uint8_t BEZIER_SQUARE_TYPES[3][3] = {
+        {0, 1, 2}, {1, 1, 1}, {2, 1, 0}
+    };
 
     size_t j, k, index;
     float x, u, v;
@@ -148,6 +170,8 @@ bool beziator_generate(Beziator *beziator) {
     GLuint verts = 0, verts2 = 0;
     const int *c;
     mat4 m4b;
+    uint8_t si, sj;
+    const uint8_t (*st)[2];
 
     Mesh *mesh = &beziator->mesh, *mesh_skel = &beziator->frame;
     const size_t d = DETALIZATION;
@@ -196,30 +220,40 @@ bool beziator_generate(Beziator *beziator) {
                 E[verts++] = (unsigned)(i * d * d + (j + 1) * d + k);
                 E[verts++] = (unsigned)(i * d * d + j * d + k + 1);
 
-                E[verts++] = (unsigned)(i * d * d + (j + 1) * d + k);
-                E[verts++] = (unsigned)(i * d * d + j * d + k + 1);
                 E[verts++] = (unsigned)(i * d * d + (j + 1) * d + k + 1);
+                E[verts++] = (unsigned)(i * d * d + j * d + k + 1);
+                E[verts++] = (unsigned)(i * d * d + (j + 1) * d + k);
             }
 
         surface = &(beziator->surfaces[i]);
-        /*for (j = 1; j < 4; j++)
-            for (k = 1; k < 4; k++) {
-                index = (size_t)((*surface)[j][k] - beziator->points);
-                glm_vec3_sub(*((*surface)[j][k]), *((*surface)[j-1][k]), m4b[0]);
-                glm_vec3_sub(*((*surface)[j][k]), *((*surface)[j][k-1]), m4b[1]);
-                glm_vec3_cross(m4b[0], m4b[1], m4b[2]);
-                glm_vec3_add(V2[index].normal, m4b[2], V2[index].normal);
+        for (si = 0; si < 3; si++) {
+            for (sj = 0; sj < 3; sj++) {
+                st = SQUARE_TYPES[BEZIER_SQUARE_TYPES[si][sj]];
+                while (st[2][0] != 9) {
+                    if (st[2][0] == 8) {
+                        st += 3;
+                    }
+                    index = (size_t)((*surface)[si+st[1][0]][sj+st[1][1]] - beziator->points);
+                    glm_vec3_sub(*((*surface)[si+st[1][0]][sj+st[1][1]]),
+                            *((*surface)[si+st[0][0]][sj+st[0][1]]), m4b[0]);
+                    glm_vec3_sub(*((*surface)[si+st[1][0]][sj+st[1][1]]),
+                            *((*surface)[si+st[2][0]][sj+st[2][1]]), m4b[1]);
+                    glm_vec3_cross(m4b[0], m4b[1], m4b[2]);
+                    glm_vec3_add(V2[index].normal, m4b[2], V2[index].normal);
+                    st++;
+                }
             }
-
-        for (j = 0; j < 3; j++)
-            for (k = 0; k < 3; k++) {
-                index = (size_t)((*surface)[j-1][k-1] - beziator->points);
-                glm_vec3_sub(*((*surface)[j][k]), *((*surface)[j+1][k]), m4b[0]);
-                glm_vec3_sub(*((*surface)[j][k]), *((*surface)[j][k+1]), m4b[1]);
-                glm_vec3_cross(m4b[0], m4b[1], m4b[2]);
-                glm_vec3_add(V2[index].normal, m4b[2], V2[index].normal);
-            }*/
+        }
     }
+    /*
+    // Example drawing of normals for frame
+    for (size_t i = 0; i < beziator->points_size; i++) {
+        glm_normalize(V2[i].normal);
+        glm_vec3_add(V2[i].position, V2[i].normal,
+                     V2[i+beziator->points_size].position);
+        E2[verts2++] = (unsigned)i;
+        E2[verts2++] = (unsigned)(i+beziator->points_size);
+    }*/
     mesh_update(mesh, sizei, sizei, V, E);
     mesh_update(mesh_skel, sizei, sizei, V2, E2);
     return true;

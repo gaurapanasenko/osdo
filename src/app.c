@@ -90,7 +90,7 @@ int app_loop(App *app) {
     struct nk_colorf bg;
     bg.r = 0.8f; bg.g = 0.9f; bg.b = 0.8f; bg.a = 1.0f;
     char text[128];
-    vec4 *position;
+    vec4 *position, direction;
     vec3 rotation, *animation;
     Bijective bijective;
 
@@ -235,10 +235,11 @@ int app_loop(App *app) {
         shader_set_vec3(sh, "objectColor", (vec3){0,1,0});
 
         // directional light
-        shader_set_vec3f(sh, "dirLight.direction", 0.0f, -1.0f, 0.0f);
+        camera_get_direction(&app->camera, direction);
+        shader_set_vec3(sh, "dirLight.direction", direction);
         shader_set_vec3f(sh, "dirLight.ambient", 0.0f, 0.0f, 0.0f);
-        shader_set_vec3f(sh, "dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-        shader_set_vec3f(sh, "dirLight.specular", 1.f, 1.f, 1.f);
+        shader_set_vec3f(sh, "dirLight.diffuse", 0.6f, 0.6f, 0.6f);
+        shader_set_vec3f(sh, "dirLight.specular", 0.f, 0.f, 0.f);
 
         // camera/view transformation
         camera_get_mat4((void*)&app->camera, app->last_camera);
@@ -248,15 +249,28 @@ int app_loop(App *app) {
         shader_set_mat4(sh, "camera", app->last_camera);
         shader_set_vec2(sh, "vp", (vec2){(float)app->window.size[0], (float)app->window.size[1]});
 
+        shader_set_float(sh, "alpha", 1.0);
+
         bijective_rotate_all(bijective, rotation);
 
-        //glEnable(GL_BLEND);
-        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        //glAlphaFunc(GL_GREATER, 0.0f);
+        // Culling unneded back faced
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
+
+        glEnable(GL_DEPTH_TEST);
+
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         //glEnable(GL_ALPHA_TEST);
+        //glAlphaFunc(GL_GREATER, 0.0f);
+
         glPointSize(10);
         if (!scene->wireframe)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
         // render the loaded models
         for_each_utarr (Object, i, scene->objects){
             object_draw(i, app->mat4buf,

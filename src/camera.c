@@ -3,9 +3,9 @@
 
 void camera_get_direction(Camera* camera, vec4 dest) {
     mat4 matrix;
-    glm_rotate_make(matrix, camera->rotation[0], GLM_XUP);
-    glm_rotate(matrix, camera->rotation[1], GLM_YUP);
-    glm_rotate(matrix, camera->rotation[2], GLM_ZUP);
+    glm_rotate_make(matrix, -camera->rotation[2], GLM_ZUP);
+    glm_rotate(matrix, -camera->rotation[1], GLM_YUP);
+    glm_rotate(matrix, -camera->rotation[0], GLM_XUP);
     glm_mat4_mulv(matrix, CAMERA_DIRECTION, dest);
 }
 

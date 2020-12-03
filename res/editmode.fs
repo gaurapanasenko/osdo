@@ -20,6 +20,7 @@ struct DirLight {
 uniform vec3 viewPos;
 uniform DirLight dirLight;
 uniform float materialShininess;
+uniform float alpha;
 
 // calculates the color when using a directional light.
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color)
@@ -53,5 +54,5 @@ void main()
     if(color.a < 0.1)
         discard;
     vec3 tmp = CalcDirLight(dirLight, norm, viewDir, vec3(0,1.0,0));
-    FragColor = vec4(tmp, 1.0);
+    FragColor = vec4(tmp, alpha);
 }

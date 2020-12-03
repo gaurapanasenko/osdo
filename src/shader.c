@@ -27,24 +27,31 @@ char * readFromFile(const char *path) {
 
 // utility function for checking shader compilation/linking errors.
 bool check_shader(GLuint shader, const int type) {
-    GLint err_log_size = 0;
+    GLint status = 0, size = 0;
     GLchar *log;
+    GLuint status_type = GL_COMPILE_STATUS;
+    void (*gl_get)(GLuint, GLuint, GLint*) = glGetShaderiv;
 
-    if (type == 0)
-        glGetProgramiv(shader, GL_LINK_STATUS, &err_log_size);
-    else
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &err_log_size);
-
-    if (!err_log_size) {
-        log = (GLchar*)malloc((unsigned long)err_log_size);
-        if (log == NULL) {
-            printf("Got some error, but cant allocate memory to read it.");
-        }
-        glGetShaderInfoLog(shader, err_log_size, NULL, log);
-        printf("%s", log);
-        free(log);
+    if (type == 0) {
+        gl_get = glGetProgramiv;
+        status_type = GL_LINK_STATUS;
     }
-    return (bool)err_log_size;
+
+    gl_get(shader, status_type, &status);
+    if (status == GL_FALSE) {
+        gl_get(shader, GL_INFO_LOG_LENGTH, &size);
+        log = (GLchar*)malloc((unsigned long)size);
+        if (log == NULL) {
+            printf("Got some error, but cant allocate memory to read it.\n");
+            return false;
+        }
+        glGetShaderInfoLog(shader, size, &size, log);
+        puts(log);
+        fflush(stdout);
+        free(log);
+        return false;
+    }
+    return true;
 }
 
 bool shader_compile(const char* vertexCode, const char* fragmentCode,
