@@ -45,7 +45,7 @@ int app_init(App *app) {
         object_init(&object, model, shader);
         object_translate(&object, (vec3){0, -5, 0});
         object_scale(&object, (vec3){4, 4, 4});
-        object_rotate(&object, -M_PI_F / 3.f, GLM_XUP);
+        object_rotate(&object, -M_PI_F / 3.f, X);
         HASH_ADD_STR(app->models, name, model);
         utarray_push_back(app->objects, &object);
 
@@ -304,14 +304,14 @@ void app_scroll(Window* window, GLdouble xoffset, GLdouble yoffset) {
 
 void app_mouse(Window* window, vec2 pos, vec2 offset) {
     App *app = window_get_user_pointer(window);
-    GLfloat xoffset = (GLfloat)offset[0], yoffset = (GLfloat)offset[1];
 
     if (app->interactive_mode) {
-        xoffset *= SENSITIVITY;
-        yoffset *= SENSITIVITY;
+        vec2 offset_sens = GLM_VEC2_ZERO_INIT;
+        glm_vec2_muladds(offset, -SENSITIVITY, offset_sens);
+        //offset_sens[0] *= -1;
 
-        camera_rotate(&app->camera, xoffset, GLM_YUP);
-        camera_rotate(&app->camera, yoffset, GLM_XUP);
+        camera_rotate(&app->camera, offset_sens[0], Y);
+        camera_rotate(&app->camera, offset_sens[1], X);
     }
     nk_glfw_mouse_callback(&app->nkglfw, pos, offset);
 }
@@ -451,7 +451,7 @@ void app_process_input(App *app) {
                     bijective_translate(bijective, m3i[j], t);
                     break;
                 case ROTATE:
-                    bijective_rotate(bijective, m3i[j], t);
+                    bijective_rotate(bijective, (enum coord_enum)j, t);
                     break;
                 case ANIMATE:
                     bijective_set_animation(bijective, m3i[j], t);

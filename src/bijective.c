@@ -15,9 +15,10 @@ void bijective_translate(Bijective bijective, vec3 distances, float delta_time) 
                 bijective.bijective, distances, delta_time);
 }
 
-void bijective_rotate(Bijective bijective, vec3 axis, float delta_time) {
+void bijective_rotate(
+        Bijective bijective, enum coord_enum coord, float delta_time) {
     bijective.type->rotate(
-                bijective.bijective, axis, delta_time);
+                bijective.bijective, coord, delta_time);
 }
 
 void bijective_rotate_all(Bijective bijective, vec3 angles) {

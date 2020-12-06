@@ -31,7 +31,7 @@
 #define NK_GLFW_DOUBLE_CLICK_LO 0.02
 #define NK_GLFW_DOUBLE_CLICK_HI 0.2
 
-#define BASIS0POS ((vec3){ 0.0f, 0.0f, -32.0f})
+#define BASIS0POS ((vec3){ 0.0f, 0.0f,-32.0f})
 #define BASIS1POS ((vec3){-8.0f, 0.0f,  0.0f})
 #define BASIS2POS ((vec3){ 8.0f, 0.0f,  0.0f})
 

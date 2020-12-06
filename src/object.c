@@ -41,21 +41,25 @@ void object_translate_bijective(Object *object, vec3 distances, float delta_time
     object_translate(object, new_distances);
 }
 
-void object_rotate(Object* object, float angle, vec3 axis) {
-    mat4 matrix;
-    glm_rotate_make(matrix, angle, axis);
+void object_rotate(Object* object, float angle, enum coord_enum coord) {
+    mat4 matrix = GLM_MAT4_IDENTITY_INIT;
+    switch (coord) {
+    case X: glm_rotate_x(matrix, angle, matrix); break;
+    case Y: glm_rotate_y(matrix, angle, matrix); break;
+    case Z: glm_rotate_z(matrix, angle, matrix); break;
+    }
     glm_mat4_mul(matrix, object->transform, object->transform);
 }
 
 void object_rotate_all(Object *object, vec3 angles) {
-    object_rotate(object, angles[0], GLM_XUP);
-    object_rotate(object, angles[1], GLM_YUP);
-    object_rotate(object, angles[2], GLM_ZUP);
+    object_rotate(object, angles[0], X);
+    object_rotate(object, angles[1], Y);
+    object_rotate(object, angles[2], Z);
 }
 
-void object_rotate_bijective(
-        Object *object, vec3 axis, float delta_time) {
-    object_rotate(object, delta_time * OBJECT_ROTATE_SPEED, axis);
+void object_rotate_bijective(Object *object, enum coord_enum coord,
+                             float delta_time) {
+    object_rotate(object, delta_time * OBJECT_ROTATE_SPEED, coord);
 }
 
 void object_rotate_all_bijective(Object *object, vec3 angles) {

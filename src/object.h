@@ -27,10 +27,10 @@ void object_translate(Object* object, vec3 distances);
 void object_translate_bijective(
         Object* object, vec3 distances, float delta_time);
 
-void object_rotate(Object* object, float angle, vec3 axis);
+void object_rotate(Object* object, float angle, enum coord_enum coord);
 void object_rotate_all(Object* object, vec3 angles);
 void object_rotate_bijective(
-        Object* object, vec3 axis, float delta_time);
+        Object* object, enum coord_enum coord, float delta_time);
 void object_rotate_all_bijective(Object* object, vec3 angles);
 
 void object_get_position(Object* object, vec4 dest);

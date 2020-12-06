@@ -9,7 +9,7 @@
 #define CAMERA_DIRECTION ((vec4)CAMERA_DIRECTION_INIT)
 
 typedef struct Camera {
-    vec3 rotation;
+    mat4 rotation;
     vec4 position;
     vec3 animation;
 } Camera;
@@ -25,10 +25,10 @@ void camera_translate(Camera* camera, vec3 distances);
 void camera_translate_bijective(
         Camera *camera, vec3 distances, float delta_time);
 
-void camera_rotate(Camera* camera, float angle, vec3 axis);
+void camera_rotate(Camera* camera, float angle, enum coord_enum coord);
 void camera_rotate_all(Camera* camera, vec3 angles);
 void camera_rotate_bijective(
-        Camera *camera, vec3 axis, float delta_time);
+        Camera *camera, enum coord_enum coord, float delta_time);
 void camera_rotate_all_bijective(Camera *camera, vec3 angles);
 
 void camera_get_animation(Camera *camera, vec3 **animation);
@@ -44,7 +44,7 @@ static const BijectiveType camera_bijective = {
     camera_set_animation
 };
 
-#define CAMERA_INIT {GLM_VEC3_ZERO_INIT, GLM_VEC4_BLACK_INIT,\
+#define CAMERA_INIT {GLM_MAT4_IDENTITY_INIT, GLM_VEC4_BLACK_INIT, \
     GLM_VEC3_ZERO_INIT}
 #define CAMERA ((Camera)CAMERA_INIT)
 

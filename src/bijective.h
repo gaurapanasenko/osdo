@@ -15,7 +15,7 @@ typedef void (*get_mat4_cb)(
 typedef void (*translate_cb)(
         bijective_t bijective, vec3 distances, float delta_time);
 typedef void (*rotate_cb)(
-        bijective_t bijective, vec3 axis, float delta_time);
+        bijective_t bijective, enum coord_enum coord, float delta_time);
 typedef void (*rotate_all_cb)(
         bijective_t bijective, vec3 angles);
 typedef void (*get_animation_cb)(
@@ -48,7 +48,7 @@ void bijective_translate(
         Bijective bijective, vec3 distances, float delta_time);
 
 void bijective_rotate(
-        Bijective bijective, vec3 axis, float delta_time);
+        Bijective bijective, enum coord_enum coord, float delta_time);
 
 void bijective_rotate_all(
         Bijective bijective, vec3 angles);
