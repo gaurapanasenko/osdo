@@ -37,8 +37,9 @@ void object_get_position(Object* object, vec4 dest);
 
 void object_animate(Object* object, float step);
 void object_get_animation(Object *object, vec3 **animation);
-void object_set_animation(
-        bijective_t bijective, vec3 angles, float delta_time);
+void object_set_animation(Object *object, vec3 angles, float delta_time);
+
+void object_scale(Object *object, vec3 scale);
 
 static const BijectiveType object_bijective = {
     object_get_position_bijective,

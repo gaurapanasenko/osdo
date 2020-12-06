@@ -13,7 +13,7 @@ typedef struct Beziator {
     size_t points_size, surfaces_size;
     vec4 *points;
     surface_t *surfaces;
-    Mesh mesh, frame;
+    Mesh mesh, frame, normals;
     Shader *editmode;
     Model model;
 } Beziator;

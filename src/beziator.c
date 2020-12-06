@@ -7,12 +7,13 @@
 { -3,  9, -9,  3},\
 {  6,-12,  6,  0},\
 { -3,  3,  0,  0},}
-#define DETALIZATION 16
+#define DETALIZATION 8
 
 bool beziator_init(
         Beziator *beziator, const char *name, Shader *editmode) {
     mesh_init(&beziator->mesh);
     mesh_init(&beziator->frame);
+    mesh_init(&beziator->normals);
     beziator->editmode = editmode;
     const size_t path_len = strlen(BEZIATOR_PATH);
     const size_t len = strlen(BEZIATOR_PATH);
@@ -78,6 +79,7 @@ void beziator_del(Beziator *beziator) {
     }
     mesh_del(&beziator->mesh);
     mesh_del(&beziator->frame);
+    mesh_del(&beziator->normals);
 }
 
 void beziator_free(Beziator *beziator) {
@@ -88,10 +90,11 @@ void beziator_free(Beziator *beziator) {
 void beziator_draw(Beziator *beziator) {
     //shader_set_vec3(beziator->editmode, "min_coord", beziator->min_coord);
     //shader_set_vec3(beziator->editmode, "max_coord", beziator->max_coord);
-    mesh_draw_mode(&beziator->frame, GL_POINTS);
-    mesh_draw_mode(&beziator->frame, GL_LINES);
+    //mesh_draw_mode(&beziator->frame, GL_POINTS);
+    //mesh_draw_mode(&beziator->frame, GL_LINES);
     shader_set_float(beziator->editmode, "alpha", 0.5f);
     mesh_draw_mode(&beziator->mesh, GL_TRIANGLES);
+    //mesh_draw_mode(&beziator->normals, GL_LINES);
     shader_set_float(beziator->editmode, "alpha", 1);
 }
 
@@ -132,7 +135,7 @@ void bezier_surface(
     bezier_curve_tangent(v, res1, res3[1]);
     bezier_curve_tangent(u, res2, res3[3]);
 
-    glm_cross(res3[3], res3[1], normal);
+    glm_cross(res3[1], res3[3], normal);
 }
 
 bool beziator_generate(Beziator *beziator) {
@@ -167,13 +170,14 @@ bool beziator_generate(Beziator *beziator) {
     float x, u, v;
     vec4 *point, vertex, normal;
     surface_t *surface;
-    GLuint verts = 0, verts2 = 0;
+    GLuint verts = 0, verts2 = 0, verts3 = 0;
     const int *c;
     mat4 m4b;
     uint8_t si, sj;
     const uint8_t (*st)[2];
 
-    Mesh *mesh = &beziator->mesh, *mesh_skel = &beziator->frame;
+    Mesh *mesh = &beziator->mesh, *mesh_skel = &beziator->frame,
+            *mesh_normals = &beziator->normals;
     const size_t d = DETALIZATION;
     x = 1.f / (d - 1);
 
@@ -184,6 +188,8 @@ bool beziator_generate(Beziator *beziator) {
     GLuint *E = (GLuint*)calloc(size, sizeof(GLuint));
     Vertex *V2 = (Vertex*)calloc(size, sizeof(Vertex));
     GLuint *E2 = (GLuint*)calloc(size, sizeof(GLuint));
+    Vertex *V3 = (Vertex*)calloc(size, sizeof(Vertex));
+    GLuint *E3 = (GLuint*)calloc(size, sizeof(GLuint));
 
     // Creator frame vertices
     for (size_t i = 0; i < beziator->points_size; i++) {
@@ -207,21 +213,28 @@ bool beziator_generate(Beziator *beziator) {
                 u = (float)j*x; v = (float)k*x;
                 index = i * d * d + j * d + k;
                 bezier_surface(u, v, beziator->surfaces[i], vertex, normal);
+                glm_normalize(normal);
                 glm_vec3_copy(vertex, V[index].position);
                 glm_vec3_copy(normal, V[index].normal);
                 V[verts].color[1] = 255;
+                /*glm_vec3_copy(vertex, V3[verts3].position);
+                E3[verts3] = verts3;
+                verts3++;
+                glm_vec3_add(normal, vertex, V3[verts3].position);
+                E3[verts3] = verts3;
+                verts3++;*/
             }
         }
 
         // Create triangles
         for (j = 0; j < d - 1; j++)
             for (k = 0; k < d - 1; k++) {
-                E[verts++] = (unsigned)(i * d * d + j * d + k);
                 E[verts++] = (unsigned)(i * d * d + (j + 1) * d + k);
+                E[verts++] = (unsigned)(i * d * d + j * d + k);
                 E[verts++] = (unsigned)(i * d * d + j * d + k + 1);
 
-                E[verts++] = (unsigned)(i * d * d + (j + 1) * d + k + 1);
                 E[verts++] = (unsigned)(i * d * d + j * d + k + 1);
+                E[verts++] = (unsigned)(i * d * d + (j + 1) * d + k + 1);
                 E[verts++] = (unsigned)(i * d * d + (j + 1) * d + k);
             }
 
@@ -256,5 +269,6 @@ bool beziator_generate(Beziator *beziator) {
     }*/
     mesh_update(mesh, sizei, sizei, V, E);
     mesh_update(mesh_skel, sizei, sizei, V2, E2);
+    mesh_update(mesh_normals, sizei, sizei, V3, E3);
     return true;
 }

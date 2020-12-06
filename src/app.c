@@ -39,19 +39,22 @@ int app_init(App *app) {
         Model *model;
         Object object;
 
-        model_ch.beziator = beziator_create("test", shader);
-        model = model_create("test", model_ch, &beziator_type);
+        model_ch.beziator = beziator_create("teapot", shader);
+        model = model_create("teapot", model_ch, &beziator_type);
         beziator_generate(model_ch.beziator);
         object_init(&object, model, shader);
+        object_translate(&object, (vec3){0, -5, 0});
+        object_scale(&object, (vec3){4, 4, 4});
+        object_rotate(&object, -M_PI_F / 3.f, GLM_XUP);
         HASH_ADD_STR(app->models, name, model);
         utarray_push_back(app->objects, &object);
 
-        model_ch.mesh = mesh_create();
+        /*model_ch.mesh = mesh_create();
         mesh_cube_update(model_ch.mesh);
         model = model_create("cube", model_ch, &mesh_type);
         object_init(&object, model, shader);
         HASH_ADD_STR(app->models, name, model);
-        utarray_push_back(app->objects, &object);
+        utarray_push_back(app->objects, &object);*/
     }
 
     scene_init(&app->scene, app->objects);
@@ -254,15 +257,15 @@ int app_loop(App *app) {
         bijective_rotate_all(bijective, rotation);
 
         // Culling unneded back faced
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        glFrontFace(GL_CCW);
+        //glEnable(GL_CULL_FACE);
+        //glCullFace(GL_BACK);
+        //glFrontFace(GL_CCW);
 
         glEnable(GL_DEPTH_TEST);
 
-        glEnable(GL_BLEND);
-        glBlendEquation(GL_FUNC_ADD);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glEnable(GL_BLEND);
+        //glBlendEquation(GL_FUNC_ADD);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         //glEnable(GL_ALPHA_TEST);
         //glAlphaFunc(GL_GREATER, 0.0f);

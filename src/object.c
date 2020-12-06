@@ -72,9 +72,13 @@ void object_get_animation(Object* object, vec3 **animation) {
     *animation = &object->animation;
 }
 
-void object_set_animation(bijective_t bijective, vec3 angles, float delta_time) {
+void object_set_animation(Object* object, vec3 angles, float delta_time) {
     vec3 animation = GLM_VEC3_ZERO_INIT;
     glm_vec3_muladds(angles, delta_time, animation);
-    glm_vec3_add(bijective.object->animation, animation,
-                 bijective.object->animation);
+    glm_vec3_add(object->animation, animation,
+                 object->animation);
+}
+
+void object_scale(Object *object, vec3 scale) {
+    glm_scale(object->transform, scale);
 }

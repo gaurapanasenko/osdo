@@ -6,6 +6,8 @@
 
 #define M_PI 3.14159265358979323846
 #define M_RAD M_PI / 180
+#define M_PI_F 3.14159265358979323846f
+#define M_RAD_F M_PI_F / 180
 
 #define RES_DIR "../share/osdo"
 
