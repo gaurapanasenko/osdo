@@ -3,17 +3,25 @@
 
 void camera_get_direction(Camera* camera, vec4 dest) {
     mat4 matrix;
-    glm_rotate_make(matrix, -camera->rotation[2], GLM_ZUP);
-    glm_rotate(matrix, -camera->rotation[1], GLM_YUP);
-    glm_rotate(matrix, -camera->rotation[0], GLM_XUP);
+    camera_get_rotation_inv_mat4(camera, matrix);
     glm_mat4_mulv(matrix, CAMERA_DIRECTION, dest);
 }
 
 void camera_get_mat4(Camera *camera, mat4 dest) {
+    camera_get_rotation_mat4(camera, dest);
+    glm_translate(dest, camera->position);
+}
+
+void camera_get_rotation_mat4(Camera *camera, mat4 dest) {
     glm_rotate_make(dest, camera->rotation[0], GLM_XUP);
     glm_rotate(dest, camera->rotation[1], GLM_YUP);
     glm_rotate(dest, camera->rotation[2], GLM_ZUP);
-    glm_translate(dest, camera->position);
+}
+
+void camera_get_rotation_inv_mat4(Camera *camera, mat4 dest) {
+    glm_rotate(dest, -camera->rotation[0], GLM_ZUP);
+    glm_rotate(dest, -camera->rotation[1], GLM_YUP);
+    glm_rotate_make(dest, -camera->rotation[2], GLM_XUP);
 }
 
 void camera_get_position_bijective(Camera *camera, vec4 **position) {
@@ -28,9 +36,7 @@ void camera_translate_bijective(
         Camera *camera, vec3 distances, float delta_time) {
     vec3 new_distances = GLM_VEC3_ZERO_INIT;
     mat4 rotation;
-    glm_rotate_make(rotation, -camera->rotation[2], GLM_ZUP);
-    glm_rotate(rotation, -camera->rotation[1], GLM_YUP);
-    glm_rotate(rotation, -camera->rotation[0], GLM_XUP);
+    camera_get_rotation_inv_mat4(camera, rotation);
 
     glm_vec3_muladds(distances, -OBJECT_MOVE_SPEED * delta_time,
                      new_distances);

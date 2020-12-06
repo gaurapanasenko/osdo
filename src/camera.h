@@ -16,6 +16,8 @@ typedef struct Camera {
 
 void camera_get_direction(Camera* camera, vec4 dest);
 void camera_get_mat4(Camera *camera, mat4 dest);
+void camera_get_rotation_mat4(Camera *camera, mat4 dest);
+void camera_get_rotation_inv_mat4(Camera *camera, mat4 dest);
 void camera_get_position_bijective(
         Camera *camera, vec4 **position);
 
