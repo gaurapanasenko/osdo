@@ -75,7 +75,7 @@ find_library(GLFW_LIBRARY glfw REQUIRED)
 find_file(uthash_INCLUDE_FILE uthash.h REQUIRED)
 
 # Nuklear
-include_directories(nuklear)
+#include_directories(nuklear)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ${OpenGL_LIBRARIES} ${OpenGL_opengl_LIBRARY}
@@ -84,6 +84,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${glfw3_LIBRARIES} ${GLFW_LIBRARY}
   ${CGLM_LIBRARY}
   ${M_LIBRARY}
+  cimgui
 )
 
 ###############################################################################

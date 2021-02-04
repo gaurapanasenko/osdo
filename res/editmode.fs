@@ -43,16 +43,16 @@ void main()
     vec3 norm = normalize(frag_normal);
     vec3 viewDir = normalize(viewPos - frag_pos);
     vec4 color = vec4(0.0,1.0,0.0,1.0);
-    float minmin = min(frag_min_coord.z, frag_max_coord.z);
-    float maxmax = max(frag_min_coord.z, frag_max_coord.z);
+    //float minmin = min(frag_min_coord.z, frag_max_coord.z);
+    //float maxmax = max(frag_min_coord.z, frag_max_coord.z);
     //color.xy = gl_FragCoord.xy - frag_pos2.xy / frag_pos2.z;
     //color.xy = 2.0 * gl_FragCoord.xy / viewPortSize - 1.0;
-    float len = length((frag_pos2.xy / frag_pos2.z + 1.0) / 2.0 * viewPortSize - gl_FragCoord.xy);
-    color.a = 1.0 - len / 10.0;
+    //float len = length((frag_pos2.xy / frag_pos2.z + 1.0) / 2.0 * viewPortSize - gl_FragCoord.xy);
+    //color.a = 1.0 - len / 10.0;
     if(color.a < 0.5)
         color.xy = vec2(1,0);
-    if(color.a < 0.1)
-        discard;
+    //if(color.a < 0.1)
+        //discard;
     vec3 tmp = CalcDirLight(dirLight, norm, viewDir, vec3(0,1.0,0));
     FragColor = vec4(tmp, alpha);
 }

@@ -3,6 +3,8 @@
 #include "conf.h"
 #include "shader.h"
 #include "beziator.h"
+#define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
+#include <cimgui.h>
 
 int app_init(App *app) {
     app->models = NULL;
@@ -39,7 +41,7 @@ int app_init(App *app) {
         Model *model;
         Object object;
 
-        model_ch.beziator = beziator_create("teapot", shader);
+        model_ch.beziator = beziator_create("test", shader);
         model = model_create("teapot", model_ch, &beziator_type);
         beziator_generate(model_ch.beziator);
         object_init(&object, model, shader);
@@ -61,13 +63,15 @@ int app_init(App *app) {
     camera_translate(&app->camera, BASIS0POS);
 
     HASH_FIND_STR(app->shaders, "nuklear", shader);
-    nk_glfw_init(&app->nkglfw, &app->window, shader);
+    //nk_glfw_init(&app->nkglfw, &app->window, shader);
+    deimgui_init(&app->deimgui, &app->window);
 
     return 0;
 }
 
 void app_del(App *app) {
-    nk_glfw_del(&app->nkglfw);
+    //nk_glfw_del(&app->nkglfw);
+    deimgui_del(&app->deimgui);
     scene_del(&app->scene);
     utarray_free(app->objects);
 
@@ -89,20 +93,29 @@ int app_loop(App *app) {
     Shader *sh, *sh2;
     HASH_FIND_STR(app->shaders, "editmode", sh);
     HASH_FIND_STR(app->shaders, "simple", sh2);
-    struct nk_context *ctx = &app->nkglfw.context;
-    struct nk_colorf bg;
-    bg.r = 0.8f; bg.g = 0.9f; bg.b = 0.8f; bg.a = 1.0f;
+    //struct nk_context *ctx = &app->nkglfw.context;
+    //struct nk_colorf bg;
+    //bg.r = 0.8f; bg.g = 0.9f; bg.b = 0.8f; bg.a = 1.0f;
     char text[128];
     vec4 *position, direction;
     vec3 rotation, *animation;
     Bijective bijective;
+    bool light = false;
+
+    GLuint fbo, texture, depthrenderbuffer;
+    glGenFramebuffers(1, &fbo);
+    glGenTextures(1, &texture);
+    glGenRenderbuffers(1, &depthrenderbuffer);
+    //GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    //glDrawBuffers(1, DrawBuffers);
 
     // render loop
     // -----------
     while(window_alive(&app->window)) {
-        nk_glfw_begin_input(&app->nkglfw);
+        //nk_glfw_begin_input(&app->nkglfw);
         window_pre_loop(&app->window);
-        nk_glfw_end_input(&app->nkglfw);
+        //nk_glfw_end_input(&app->nkglfw);
+        deimgui_update(&app->deimgui);
 
         if (scene->active)
             snprintf(text, 128, "Object %zu", scene->active);
@@ -121,12 +134,14 @@ int app_loop(App *app) {
         glm_vec3_copy(GLM_VEC3_ZERO, rotation);
 
         /* GUI */
-        if (nk_begin(ctx, "OSDO", nk_rect(4, 4, 256, 512),
+        /*if (nk_begin(ctx, "OSDO", nk_rect(4, 4, 256, 512),
             NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
             NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
             nk_layout_row_dynamic(ctx, 25, 1);
             nk_checkbox_label(ctx, "Wireframe",
                               &app->scene.wireframe);
+            nk_checkbox_label(ctx, "Light",
+                              &light);
             nk_label(ctx, "Active element:", NK_TEXT_LEFT);
             nk_layout_row_dynamic(ctx, 25, 2);
             nk_label(ctx, text, NK_TEXT_LEFT);
@@ -175,9 +190,9 @@ int app_loop(App *app) {
                 nk_combo_end(ctx);
             }
         }
-        nk_end(ctx);
+        nk_end(ctx);*/
 
-        if (scene->active) {
+        /*if (scene->active) {
             Beziator *beziator = app->models->model.beziator;
             if (nk_begin(ctx, "Bezier mesh", nk_rect(267, 4, 256, 512),
                          NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
@@ -211,11 +226,11 @@ int app_loop(App *app) {
                 }
             }
             nk_end(ctx);
-        }
+        }*/
 
         // render
         // ------
-        glClearColor(bg.r, bg.g, bg.b, bg.a);
+        glClearColor(1,1,1,1);
         glClearDepth(1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -223,15 +238,111 @@ int app_loop(App *app) {
         // -----
         app_process_input(app);
 
-        // configure global opengl state
-        // -----------------------------
-        glEnable(GL_DEPTH_TEST);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        igSetNextWindowPos((ImVec2){4, 4}, ImGuiCond_Always, (ImVec2){0,0});
+        igSetNextWindowSize((ImVec2){300, 512}, ImGuiCond_Always);
+
+        igBegin("OSDO", NULL, 0);
+        igCheckbox("Wireframe", &app->scene.wireframe);
+        igCheckbox("Light", &light);
+        igText("Active element: %s", text);
+        igSliderInt("", &scene->active, 0, (int)utarray_len(scene->objects), "%i", 0);
+        igInputFloat3("Potision", *position, "%g", 0);
+        igInputFloat3("Rotation", rotation, "%g", 0);
+        igInputFloat3("Animation", *animation, "%g", 0);
+        igEnd();
+
+        if (scene->active) {
+            Beziator *beziator = app->models->model.beziator;
+            Object *obj = (Object*)utarray_front(scene->objects);
+
+            mat4 matr = GLM_MAT4_IDENTITY_INIT;
+            //glm_scale(matr, (vec3){(float)app->window.size[0], (float)app->window.size[1], 1});
+            glm_mat4_mul(matr, app->projection, matr);
+            glm_mat4_mul(matr, app->last_camera, matr);
+            glm_mat4_mul(matr, obj->transform, matr);
+            vec4 p;
+            int active_elem = -1;
+            float min_d = FLT_MAX, cur_d;
+
+            for (size_t i = 0; i < beziator->points_size; i++) {
+                glm_mat4_mulv(matr, beziator->points[i], p);
+                cur_d = glm_vec3_distance2(GLM_VEC3_ZERO, p);
+                if (min_d > cur_d) {
+                    min_d = cur_d;
+                    active_elem = (int)i;
+                }
+            }
+
+            igSetNextWindowPos((ImVec2){4, 4}, ImGuiCond_Always, (ImVec2){0,0});
+            igBeginTooltip();
+            igText("%i", active_elem);
+            igEndTooltip();
+
+            igSetNextWindowPos((ImVec2){308, 4}, ImGuiCond_FirstUseEver, (ImVec2){0,0});
+            igSetNextWindowSize((ImVec2){300, 600}, ImGuiCond_Always);
+            igBegin("Bezier mesh", NULL, 0);
+            if (igButton("Regenerate", (ImVec2){0, 0}))
+                beziator_generate(beziator);
+            igBeginChildStr("Control points", (ImVec2){igGetWindowContentRegionWidth(), 260}, true, 0);
+            bool changed = false;
+            for (int i = 0; i < (int)beziator->points_size; i++) {
+                igPushIDInt(i);
+                changed |= igInputFloat3("##empty", beziator->points[i], "%g", 0);
+                igSameLine(0, 5);
+                igText("%i", i);
+                igPopID();
+            }
+            igEndChild();
+            igBeginChildStr("Surfaces", (ImVec2){igGetWindowContentRegionWidth(), 260}, true, 0);
+            for (int i = 0; i < (int)beziator->surfaces_size; i++) {
+                igPushIDInt(i);
+                igText("%i", i);
+                changed |= igInputInt4("##first", beziator->surfaces[i][0], 0);
+                changed |= igInputInt4("##second", beziator->surfaces[i][1], 0);
+                changed |= igInputInt4("##third", beziator->surfaces[i][2], 0);
+                changed |= igInputInt4("##fourth", beziator->surfaces[i][3], 0);
+                igPopID();
+            }
+            igEndChild();
+            if (changed)
+                beziator_generate(beziator);
+            igEnd();
+        }
+
+        igBegin("Win", false, 0);
+        ImVec2 vMin, vMax, size, win_pos;
+        igGetWindowPos(&win_pos);
+        igGetWindowContentRegionMin(&vMin);
+        igGetWindowContentRegionMax(&vMax);
+        size.x = vMax.x-vMin.x; size.y = vMax.y-vMin.y;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0);
+
+        glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, size.x, size.y);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+
+        if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            continue;
+        glViewport(0, 0, (GLsizei)size.x, (GLsizei)size.y);
+        glClearColor(1, 1, 1, 1);
+        glClearDepth(1.0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glActiveTexture(GL_TEXTURE0);
 
         shader_use(sh);
 
         // pass projection matrix to shader
-        glm_perspective(45.f * (GLfloat) M_RAD,
-                        window_get_resolution(&app->window),
+        glm_perspective(45.f * (GLfloat) M_RAD, size.x / size.y,
                         0.01f, 100.0f, app->projection);
         shader_set_mat4(sh, "projection", app->projection);
         shader_set_float(sh, "materialShininess", 32.0f);
@@ -239,7 +350,10 @@ int app_loop(App *app) {
 
         // directional light
         camera_get_direction(&app->camera, direction);
-        shader_set_vec3(sh, "dirLight.direction", direction);
+        if (!light)
+            shader_set_vec3(sh, "dirLight.direction", (vec3){0,-1,0});
+        else
+            shader_set_vec3(sh, "dirLight.direction", direction);
         shader_set_vec3f(sh, "dirLight.ambient", 0.0f, 0.0f, 0.0f);
         shader_set_vec3f(sh, "dirLight.diffuse", 0.6f, 0.6f, 0.6f);
         shader_set_vec3f(sh, "dirLight.specular", 0.f, 0.f, 0.f);
@@ -279,11 +393,53 @@ int app_loop(App *app) {
             object_draw(i, app->mat4buf,
                         window_get_delta_time(&app->window));
         }
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        nk_glfw_render(&app->nkglfw);
+        ImVec2 cursorBegin;
+        igGetCursorPos(&cursorBegin);
+        igImage(((void*)(intptr_t)texture), size, (ImVec2){0, 0}, (ImVec2){1, 1}, (ImVec4){1,1,1,1}, (ImVec4){0,0,0,0});
+
+        igSetCursorPos(cursorBegin);
+        igInvisibleButton("##empty", size, ImGuiButtonFlags_AllowItemOverlap);
+        const bool is_hovered = igIsItemHovered(0);
+        const bool is_active = igIsItemActive();
+        if (is_hovered) {
+            ImGuiIO *io = igGetIO();
+            if (is_active) {
+                vec3 mouse_pos = {io->MouseDelta.y / size.y * 2, -io->MouseDelta.x / size.x * 2, 0};
+                camera_rotate_all(&app->camera, mouse_pos);
+            }
+            camera_translate_bijective(&app->camera, (vec3){0, 0, -io->MouseWheel}, 1);
+        }
+        ImDrawList *dl = igGetWindowDrawList();
+        if (app->scene.active) {
+            Beziator *beziator = app->models->model.beziator;
+            Object *obj = (Object*)utarray_front(scene->objects);
+            object_get_mat4(obj, app->mat4buf);
+            mat4 matr = GLM_MAT4_IDENTITY_INIT;
+            glm_mat4_mul(app->mat4buf, matr, matr);
+            glm_mat4_mul(app->last_camera, matr, matr);
+            glm_mat4_mul(app->projection, matr, matr);
+            vec4 p;
+
+            for (size_t i = 0; i < beziator->points_size; i++) {
+                glm_project(beziator->points[i], matr, (vec4){0, 0, size.x, size.y}, p);
+                //glm_mat4_mulv(matr, beziator->points[i], p);
+                ImDrawList_AddCircleFilled(dl, (ImVec2){p[0] + win_pos.x + cursorBegin.x, p[1] + win_pos.y + cursorBegin.y}, 4, igGetColorU32Vec4((ImVec4){1,0,0,1}), 0);
+            }
+        }
+
+        igEnd();
+
+        //nk_glfw_render(&app->nkglfw);
+        deimgui_render(&app->deimgui);
         window_post_loop(&app->window);
     }
+	glDeleteRenderbuffers(1, &depthrenderbuffer);
+	glDeleteTextures(1, &texture);
+	glDeleteFramebuffers(1, &fbo);
     return 0;
 }
 
@@ -297,12 +453,12 @@ bool app_load_shader(App *app, const char *name) {
     return true;
 }
 
-void app_scroll(Window* window, GLdouble xoffset, GLdouble yoffset) {
-    App *app = window_get_user_pointer(window);
-    nk_gflw_scroll_callback(&app->nkglfw, xoffset, yoffset);
+void app_scroll(UNUSED Window* window, UNUSED GLdouble xoffset, UNUSED GLdouble yoffset) {
+    //App *app = window_get_user_pointer(window);
+    //nk_gflw_scroll_callback(&app->nkglfw, xoffset, yoffset);
 }
 
-void app_mouse(Window* window, vec2 pos, vec2 offset) {
+void app_mouse(Window* window, UNUSED vec2 pos, vec2 offset) {
     App *app = window_get_user_pointer(window);
 
     if (app->interactive_mode) {
@@ -313,18 +469,18 @@ void app_mouse(Window* window, vec2 pos, vec2 offset) {
         camera_rotate(&app->camera, offset_sens[0], Y);
         camera_rotate(&app->camera, offset_sens[1], X);
     }
-    nk_glfw_mouse_callback(&app->nkglfw, pos, offset);
+    //nk_glfw_mouse_callback(&app->nkglfw, pos, offset);
 }
 
-void app_char_callback(Window* window, unsigned int codepoint) {
-    App *app = window_get_user_pointer(window);
-    nk_glfw_char_callback(&app->nkglfw, codepoint);
+void app_char_callback(UNUSED Window* window, UNUSED unsigned int codepoint) {
+    //App *app = window_get_user_pointer(window);
+    //nk_glfw_char_callback(&app->nkglfw, codepoint);
 }
 
 void app_mouse_button_callback(
-        Window *window, UNUSED enum BUTTONS button,
+        UNUSED Window *window, UNUSED enum BUTTONS button,
         UNUSED bool pressed) {
-    App *app = window_get_user_pointer(window);
+    //App *app = window_get_user_pointer(window);
     /*Object *object = (void*)utarray_eltptr(app->objects, 0);
     Model *model = object->model;
     int *size = window_get_size(&app->window);
@@ -340,7 +496,7 @@ void app_mouse_button_callback(
     }
     printf("Tap: %f %f\n", (float)cursor[0] * 2.0 / (float)size[0] - 1.0,
         (float)cursor[1] * 2.0 / (float)size[1] - 1.0);*/
-    nk_glfw_mouse_button_callback(&app->nkglfw, button, pressed);
+    //nk_glfw_mouse_button_callback(&app->nkglfw, button, pressed);
 }
 
 // glfw: when the keyboard was used, this callback is called
@@ -419,7 +575,7 @@ void app_key(Window* window, enum KEYS key, bool pressed) {
 
     }
     if (scene->active > utarray_len(scene->objects)) scene->active = 0;
-    nk_glfw_key_callback(&app->nkglfw, key, pressed);
+    //nk_glfw_key_callback(&app->nkglfw, key, pressed);
 }
 
 static mat3 m3i = GLM_MAT3_IDENTITY_INIT;

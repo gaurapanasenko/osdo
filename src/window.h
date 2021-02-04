@@ -68,6 +68,8 @@ typedef struct Window {
 int window_init(Window *window);
 void window_del(Window *window);
 
+struct GLFWwindow* window_get(Window *window);
+
 bool window_alive(Window *window);
 bool window_pre_loop(Window *window);
 void window_post_loop(Window *window);

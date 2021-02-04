@@ -1,6 +1,9 @@
 #include "window.h"
 #include "conf.h"
 #include <GLFW/glfw3.h>
+#define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
+#include <cimgui.h>
+#include <cimgui_impl.h>
 
 typedef struct key_map_t {
     enum KEYS key;
@@ -144,6 +147,12 @@ void window_del(UNUSED Window *window) {
     glfwTerminate();
 }
 
+
+GLFWwindow *window_get(Window *window) {
+    return window->window;
+}
+
+
 bool window_alive(Window *window) {
     return !glfwWindowShouldClose(window->window);
 }
@@ -264,6 +273,7 @@ void window_resize_cb(
 
 void window_scroll_cb(
         struct GLFWwindow* window, GLdouble xoffset, GLdouble yoffset) {
+    ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
     Window *win = glfwGetWindowUserPointer(window);
     win->scroll_cb(win, xoffset, yoffset);
 }
@@ -278,12 +288,14 @@ void window_mouse_motion_cb(
 }
 
 void window_char_cb(GLFWwindow* window, unsigned int codepoint) {
+    ImGui_ImplGlfw_CharCallback(window, codepoint);
     Window *win = glfwGetWindowUserPointer(window);
     win->char_cb(win, codepoint);
 }
 
 void window_mouse_button_cb(
         GLFWwindow *window, int button, int action, UNUSED int mods) {
+    ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
     Window *win = glfwGetWindowUserPointer(window);
     enum BUTTONS btn = glfw_btn_map[button];
     bool pressed = action == GLFW_PRESS;
@@ -300,6 +312,7 @@ void window_mouse_button_cb(
 
 void window_key_cb(GLFWwindow* window, int key, UNUSED int scancode,
                    int action, UNUSED int mods) {
+    ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     Window *win = glfwGetWindowUserPointer(window);

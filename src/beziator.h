@@ -8,11 +8,12 @@
 #include "model.h"
 
 typedef vec4 *surface_t[4][4];
+typedef int surfacei_t[4][4];
 
 typedef struct Beziator {
     size_t points_size, surfaces_size;
     vec4 *points;
-    surface_t *surfaces;
+    surfacei_t *surfaces;
     Mesh mesh, frame, normals;
     Shader *editmode;
     Model model;

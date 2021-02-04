@@ -1,4 +1,5 @@
 #version 330 core
+layout(location = 0) out vec3 color;
 out vec4 FragColor;
 
 struct DirLight {
@@ -73,6 +74,7 @@ void main()
         //if (spotLightOn)
         //result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
 
+    color = result;
     FragColor = vec4(result, 1.0);
 }
 

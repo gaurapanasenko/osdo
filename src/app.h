@@ -8,9 +8,10 @@
 #include "mesh.h"
 #include "scene.h"
 #include "camera.h"
-#include "nkglfw.h"
+//#include "nkglfw.h"
 #include "model.h"
 #include "window.h"
+#include "deimgui.h"
 
 enum TRANSFORMATIONS {
     ROTATE    = 0,
@@ -24,7 +25,8 @@ typedef struct App {
     Scene scene;
     UT_array *objects;
     Camera camera;
-    NkGlfw nkglfw;
+    //NkGlfw nkglfw;
+    DeImgui deimgui;
     Window window;
     bool interactive_mode;
     int trans[3][3];

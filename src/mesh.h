@@ -4,7 +4,14 @@
 #include "osdo.h"
 #include "model.h"
 
+typedef enum VetrexType {
+    VERTEX_SIMPLE = 0,
+    VERTEX_BEZIER = 1,
+} VetrexType;
+
 typedef struct Vertex {
+    VetrexType type;
+    int node_id;
     vec3 position;
     vec3 normal;
     unsigned char color[4];

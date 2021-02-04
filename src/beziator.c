@@ -34,7 +34,7 @@ bool beziator_init(
         printf("Failed to allocate memory.\n");
         return false;
     }
-    beziator->surfaces = (surface_t*)calloc(beziator->surfaces_size, sizeof(surface_t));
+    beziator->surfaces = (surfacei_t*)calloc(beziator->surfaces_size, sizeof(surfacei_t));
     if (beziator->points == NULL) {
         fclose(file);
         free(beziator->points);
@@ -42,20 +42,16 @@ bool beziator_init(
         return false;
     }
     vec4 *point;
-    surface_t *surface;
     for (size_t i = 0; i < beziator->points_size; i++) {
         point = &beziator->points[i];
         glm_vec4_copy(GLM_VEC4_BLACK, *point);
         fscanf(file, "%f%f%f", (*point), (*point) + 1, (*point) + 2);
     }
     int j, k;
-    size_t tmp;
     for (size_t i = 0; i < beziator->surfaces_size; i++) {
-        surface = &beziator->surfaces[i];
         for (j = 0; j < 4; j++)
             for (k = 0; k < 4; k++) {
-                fscanf(file, "%lu", &tmp);
-                (*surface)[j][k] = beziator->points + tmp;
+                fscanf(file, "%i", beziator->surfaces[i][j] + k);
             }
     }
     fclose(file);
@@ -91,7 +87,7 @@ void beziator_draw(Beziator *beziator) {
     //shader_set_vec3(beziator->editmode, "min_coord", beziator->min_coord);
     //shader_set_vec3(beziator->editmode, "max_coord", beziator->max_coord);
     //mesh_draw_mode(&beziator->frame, GL_POINTS);
-    //mesh_draw_mode(&beziator->frame, GL_LINES);
+    mesh_draw_mode(&beziator->frame, GL_LINES);
     shader_set_float(beziator->editmode, "alpha", 0.5f);
     mesh_draw_mode(&beziator->mesh, GL_TRIANGLES);
     //mesh_draw_mode(&beziator->normals, GL_LINES);
@@ -169,7 +165,7 @@ bool beziator_generate(Beziator *beziator) {
     size_t j, k, index;
     float x, u, v;
     vec4 *point, vertex, normal;
-    surface_t *surface;
+    surface_t surface;
     GLuint verts = 0, verts2 = 0, verts3 = 0;
     const int *c;
     mat4 m4b;
@@ -188,8 +184,8 @@ bool beziator_generate(Beziator *beziator) {
     GLuint *E = (GLuint*)calloc(size, sizeof(GLuint));
     Vertex *V2 = (Vertex*)calloc(size, sizeof(Vertex));
     GLuint *E2 = (GLuint*)calloc(size, sizeof(GLuint));
-    Vertex *V3 = (Vertex*)calloc(size, sizeof(Vertex));
-    GLuint *E3 = (GLuint*)calloc(size, sizeof(GLuint));
+    Vertex *V3 = (Vertex*)calloc(beziator->points_size, sizeof(Vertex));
+    GLuint *E3 = (GLuint*)calloc(beziator->points_size * 4, sizeof(GLuint));
 
     // Creator frame vertices
     for (size_t i = 0; i < beziator->points_size; i++) {
@@ -200,11 +196,16 @@ bool beziator_generate(Beziator *beziator) {
     }
 
     for (size_t i = 0; i < beziator->surfaces_size; i++) {
+        for (j = 0; j < 4; j++) {
+            for (k = 0; k < 4; k++) {
+                surface[j][k] = beziator->points +beziator->surfaces[i][j][k];
+            }
+        }
         // Creator frame lines
         for (j = 0; j < ctrls_size; j++) {
             c = controls_lines[j];
             E2[verts2++] =
-                    (unsigned)(beziator->surfaces[i][c[0]][c[1]] - beziator->points);
+                    (unsigned)(beziator->surfaces[i][c[0]][c[1]]);
         }
 
         // Create vertices
@@ -212,7 +213,7 @@ bool beziator_generate(Beziator *beziator) {
             for (k = 0; k < d; k++) {
                 u = (float)j*x; v = (float)k*x;
                 index = i * d * d + j * d + k;
-                bezier_surface(u, v, beziator->surfaces[i], vertex, normal);
+                bezier_surface(u, v, surface, vertex, normal);
                 glm_normalize(normal);
                 glm_vec3_copy(vertex, V[index].position);
                 glm_vec3_copy(normal, V[index].normal);
@@ -238,7 +239,6 @@ bool beziator_generate(Beziator *beziator) {
                 E[verts++] = (unsigned)(i * d * d + (j + 1) * d + k);
             }
 
-        surface = &(beziator->surfaces[i]);
         for (si = 0; si < 3; si++) {
             for (sj = 0; sj < 3; sj++) {
                 st = SQUARE_TYPES[BEZIER_SQUARE_TYPES[si][sj]];
@@ -246,11 +246,11 @@ bool beziator_generate(Beziator *beziator) {
                     if (st[2][0] == 8) {
                         st += 3;
                     }
-                    index = (size_t)((*surface)[si+st[1][0]][sj+st[1][1]] - beziator->points);
-                    glm_vec3_sub(*((*surface)[si+st[1][0]][sj+st[1][1]]),
-                            *((*surface)[si+st[0][0]][sj+st[0][1]]), m4b[0]);
-                    glm_vec3_sub(*((*surface)[si+st[1][0]][sj+st[1][1]]),
-                            *((*surface)[si+st[2][0]][sj+st[2][1]]), m4b[1]);
+                    index = (size_t)((surface)[si+st[1][0]][sj+st[1][1]] - beziator->points);
+                    glm_vec3_sub(*((surface)[si+st[1][0]][sj+st[1][1]]),
+                            *((surface)[si+st[0][0]][sj+st[0][1]]), m4b[0]);
+                    glm_vec3_sub(*((surface)[si+st[1][0]][sj+st[1][1]]),
+                            *(surface[si+st[2][0]][sj+st[2][1]]), m4b[1]);
                     glm_vec3_cross(m4b[0], m4b[1], m4b[2]);
                     glm_vec3_add(V2[index].normal, m4b[2], V2[index].normal);
                     st++;
