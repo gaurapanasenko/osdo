@@ -269,6 +269,6 @@ bool beziator_generate(Beziator *beziator) {
     }*/
     mesh_update(mesh, sizei, sizei, V, E);
     mesh_update(mesh_skel, sizei, sizei, V2, E2);
-    mesh_update(mesh_normals, sizei, sizei, V3, E3);
+    //mesh_update(mesh_normals, sizei, sizei, V3, E3);
     return true;
 }

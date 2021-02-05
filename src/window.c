@@ -94,8 +94,8 @@ int window_init(Window *win) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glEnable(GL_MULTISAMPLE);
-    glfwWindowHint(GLFW_SAMPLES, 8);
+    //glEnable(GL_MULTISAMPLE);
+    //glfwWindowHint(GLFW_SAMPLES, 8);
 
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);

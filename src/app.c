@@ -41,7 +41,7 @@ int app_init(App *app) {
         Model *model;
         Object object;
 
-        model_ch.beziator = beziator_create("test", shader);
+        model_ch.beziator = beziator_create("car", shader);
         model = model_create("teapot", model_ch, &beziator_type);
         beziator_generate(model_ch.beziator);
         object_init(&object, model, shader);
@@ -101,13 +101,26 @@ int app_loop(App *app) {
     vec3 rotation, *animation;
     Bijective bijective;
     bool light = false;
+    vec4 *points = NULL;
+    size_t points_size = 0;
 
-    GLuint fbo, texture, depthrenderbuffer;
-    glGenFramebuffers(1, &fbo);
+    GLuint texture, texture2;
     glGenTextures(1, &texture);
-    glGenRenderbuffers(1, &depthrenderbuffer);
-    //GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    //glDrawBuffers(1, DrawBuffers);
+    glGenTextures(1, &texture2);
+
+    GLuint fbo, fbo_ms, texture_ms, depth_rbo, color_rbo;
+    GLuint fbo2, fbo_ms2, texture_ms2, depth_rbo2, color_rbo2;
+    glEnable(GL_MULTISAMPLE);
+    glGenFramebuffers(1, &fbo);
+    glGenFramebuffers(1, &fbo_ms);
+    glGenTextures(1, &texture_ms);
+    glGenRenderbuffers(1, &depth_rbo);
+    glGenRenderbuffers(1, &color_rbo);
+    glGenFramebuffers(1, &fbo2);
+    glGenFramebuffers(1, &fbo_ms2);
+    glGenTextures(1, &texture_ms2);
+    glGenRenderbuffers(1, &depth_rbo2);
+    glGenRenderbuffers(1, &color_rbo2);
 
     // render loop
     // -----------
@@ -240,8 +253,8 @@ int app_loop(App *app) {
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        igSetNextWindowPos((ImVec2){4, 4}, ImGuiCond_Always, (ImVec2){0,0});
-        igSetNextWindowSize((ImVec2){300, 512}, ImGuiCond_Always);
+        igSetNextWindowPos((ImVec2){4, 4}, ImGuiCond_FirstUseEver, (ImVec2){0,0});
+        igSetNextWindowSize((ImVec2){300, 512}, ImGuiCond_FirstUseEver);
 
         igBegin("OSDO", NULL, 0);
         igCheckbox("Wireframe", &app->scene.wireframe);
@@ -318,128 +331,341 @@ int app_loop(App *app) {
         igGetWindowContentRegionMax(&vMax);
         size.x = vMax.x-vMin.x; size.y = vMax.y-vMin.y;
 
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo_ms);
 
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture_ms);
+            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, GL_TRUE);
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, texture_ms, 0);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0);
+            /*glBindRenderbuffer(GL_RENDERBUFFER, color_rbo);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, (GLsizei)size.x, (GLsizei)size.y);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, color_rbo);*/
 
-        glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, size.x, size.y);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+            glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, (GLsizei)size.x, (GLsizei)size.y);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth_rbo);
 
-        if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            continue;
-        glViewport(0, 0, (GLsizei)size.x, (GLsizei)size.y);
-        glClearColor(1, 1, 1, 1);
-        glClearDepth(1.0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glActiveTexture(GL_TEXTURE0);
+            if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+                glEnable(GL_DEPTH_TEST);
+                glViewport(0, 0, (GLsizei)size.x, (GLsizei)size.y);
+                glClearColor(1, 1, 1, 1);
+                glClearDepth(1.0);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glActiveTexture(GL_TEXTURE0);
 
-        shader_use(sh);
+                shader_use(sh);
 
-        // pass projection matrix to shader
-        glm_perspective(45.f * (GLfloat) M_RAD, size.x / size.y,
-                        0.01f, 100.0f, app->projection);
-        shader_set_mat4(sh, "projection", app->projection);
-        shader_set_float(sh, "materialShininess", 32.0f);
-        shader_set_vec3(sh, "objectColor", (vec3){0,1,0});
+                // pass projection matrix to shader
+                glm_perspective(45.f * (GLfloat) M_RAD, size.x / size.y,
+                                0.01f, 100.0f, app->projection);
+                //glm_mat4_identity(app->projection);
+                shader_set_mat4(sh, "projection", app->projection);
+                shader_set_float(sh, "materialShininess", 32.0f);
+                shader_set_vec3(sh, "objectColor", (vec3){0,1,0});
 
-        // directional light
-        camera_get_direction(&app->camera, direction);
-        if (!light)
-            shader_set_vec3(sh, "dirLight.direction", (vec3){0,-1,0});
-        else
-            shader_set_vec3(sh, "dirLight.direction", direction);
-        shader_set_vec3f(sh, "dirLight.ambient", 0.0f, 0.0f, 0.0f);
-        shader_set_vec3f(sh, "dirLight.diffuse", 0.6f, 0.6f, 0.6f);
-        shader_set_vec3f(sh, "dirLight.specular", 0.f, 0.f, 0.f);
+                // directional light
+                camera_get_direction(&app->camera, direction);
+                if (!light)
+                    shader_set_vec3(sh, "dirLight.direction", (vec3){0,-1,0});
+                else
+                    shader_set_vec3(sh, "dirLight.direction", direction);
+                shader_set_vec3f(sh, "dirLight.ambient", 0.0f, 0.0f, 0.0f);
+                shader_set_vec3f(sh, "dirLight.diffuse", 0.6f, 0.6f, 0.6f);
+                shader_set_vec3f(sh, "dirLight.specular", 0.f, 0.f, 0.f);
 
-        // camera/view transformation
-        camera_get_mat4((void*)&app->camera, app->last_camera);
-        shader_set_vec3(sh, "viewPos", app->camera.position);
-        shader_set_vec3f(sh, "objectColor", 0.4f, 0.8f, 0.4f);
-        shader_set_float(sh, "materialShininess", 32.0f);
-        shader_set_mat4(sh, "camera", app->last_camera);
-        shader_set_vec2(sh, "vp", (vec2){(float)app->window.size[0], (float)app->window.size[1]});
+                // camera/view transformation
+                camera_get_mat4((void*)&app->camera, app->last_camera);
+                shader_set_vec3(sh, "viewPos", app->camera.position);
+                shader_set_vec3f(sh, "objectColor", 0.4f, 0.8f, 0.4f);
+                shader_set_float(sh, "materialShininess", 32.0f);
+                shader_set_mat4(sh, "camera", app->last_camera);
+                shader_set_vec2(sh, "vp", (vec2){(float)app->window.size[0], (float)app->window.size[1]});
 
-        shader_set_float(sh, "alpha", 1.0);
+                shader_set_float(sh, "alpha", 1.0);
 
-        bijective_rotate_all(bijective, rotation);
+                bijective_rotate_all(bijective, rotation);
 
-        // Culling unneded back faced
-        //glEnable(GL_CULL_FACE);
-        //glCullFace(GL_BACK);
-        //glFrontFace(GL_CCW);
+                // Culling unneded back faced
+                //glEnable(GL_CULL_FACE);
+                //glCullFace(GL_BACK);
+                //glFrontFace(GL_CCW);
 
-        glEnable(GL_DEPTH_TEST);
+                //glEnable(GL_BLEND);
+                //glBlendEquation(GL_FUNC_ADD);
+                //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        //glEnable(GL_BLEND);
-        //glBlendEquation(GL_FUNC_ADD);
-        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                //glEnable(GL_ALPHA_TEST);
+                //glAlphaFunc(GL_GREATER, 0.0f);
 
-        //glEnable(GL_ALPHA_TEST);
-        //glAlphaFunc(GL_GREATER, 0.0f);
+                if (!scene->wireframe)
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-        glPointSize(10);
-        if (!scene->wireframe)
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-        // render the loaded models
-        for_each_utarr (Object, i, scene->objects){
-            object_draw(i, app->mat4buf,
-                        window_get_delta_time(&app->window));
-        }
-        glBindRenderbuffer(GL_RENDERBUFFER, 0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        ImVec2 cursorBegin;
-        igGetCursorPos(&cursorBegin);
-        igImage(((void*)(intptr_t)texture), size, (ImVec2){0, 0}, (ImVec2){1, 1}, (ImVec4){1,1,1,1}, (ImVec4){0,0,0,0});
-
-        igSetCursorPos(cursorBegin);
-        igInvisibleButton("##empty", size, ImGuiButtonFlags_AllowItemOverlap);
-        const bool is_hovered = igIsItemHovered(0);
-        const bool is_active = igIsItemActive();
-        if (is_hovered) {
-            ImGuiIO *io = igGetIO();
-            if (is_active) {
-                vec3 mouse_pos = {io->MouseDelta.y / size.y * 2, -io->MouseDelta.x / size.x * 2, 0};
-                camera_rotate_all(&app->camera, mouse_pos);
+                // render the loaded models
+                for_each_utarr (Object, i, scene->objects){
+                    object_draw(i, app->mat4buf,
+                                window_get_delta_time(&app->window));
+                }
+            } else {
+                printf("Error\n");
             }
-            camera_translate_bijective(&app->camera, (vec3){0, 0, -io->MouseWheel}, 1);
-        }
-        ImDrawList *dl = igGetWindowDrawList();
-        if (app->scene.active) {
-            Beziator *beziator = app->models->model.beziator;
-            Object *obj = (Object*)utarray_front(scene->objects);
-            object_get_mat4(obj, app->mat4buf);
-            mat4 matr = GLM_MAT4_IDENTITY_INIT;
-            glm_mat4_mul(app->mat4buf, matr, matr);
-            glm_mat4_mul(app->last_camera, matr, matr);
-            glm_mat4_mul(app->projection, matr, matr);
-            vec4 p;
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-            for (size_t i = 0; i < beziator->points_size; i++) {
-                glm_project(beziator->points[i], matr, (vec4){0, 0, size.x, size.y}, p);
-                //glm_mat4_mulv(matr, beziator->points[i], p);
-                ImDrawList_AddCircleFilled(dl, (ImVec2){p[0] + win_pos.x + cursorBegin.x, p[1] + win_pos.y + cursorBegin.y}, 4, igGetColorU32Vec4((ImVec4){1,0,0,1}), 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_ms);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+            if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                printf("error\n");
+            glDrawBuffer(GL_BACK);
+            glBlitFramebuffer(0, 0, size.x, size.y, 0, 0, size.x, size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+
+        {
+            ImVec2 cursorBegin;
+            igGetCursorPos(&cursorBegin);
+            igImage(((void*)(intptr_t)texture), size, (ImVec2){0, 0}, (ImVec2){1, 1}, (ImVec4){1,1,1,1}, (ImVec4){0,0,0,0});
+
+            igSetCursorPos(cursorBegin);
+            igInvisibleButton("##empty", size, ImGuiButtonFlags_AllowItemOverlap);
+            const bool is_hovered = igIsItemHovered(0);
+            const bool is_active = igIsItemActive();
+            if (is_hovered) {
+                ImGuiIO *io = igGetIO();
+                if (is_active) {
+                    vec3 mouse_pos = {io->MouseDelta.y / size.y * 2, -io->MouseDelta.x / size.x * 2, 0};
+                    camera_rotate_all(&app->camera, mouse_pos);
+                }
+                camera_translate_bijective(&app->camera, (vec3){0, 0, -io->MouseWheel}, 1);
+            }
+            ImDrawList *dl = igGetWindowDrawList();
+            if (app->scene.active) {
+                Beziator *beziator = app->models->model.beziator;
+                Object *obj = (Object*)utarray_front(scene->objects);
+                object_get_mat4(obj, app->mat4buf);
+                mat4 matr = GLM_MAT4_IDENTITY_INIT;
+                glm_mat4_mul(app->mat4buf, matr, matr);
+                glm_mat4_mul(app->last_camera, matr, matr);
+                glm_mat4_mul(app->projection, matr, matr);
+                float minz = 0, maxz = 0;
+                if (points != NULL && points_size != beziator->points_size) {
+                    points_size = beziator->points_size;
+                    points = (vec4*)realloc(points, points_size * sizeof(vec4));
+                }
+                if (points == NULL) {
+                    points_size = beziator->points_size;
+                    points = malloc(points_size * sizeof(vec4));
+                }
+
+                for (size_t i = 0; i < beziator->points_size; i++) {
+                    //glm_mat4_mulv(matr, beziator->points[i], p);
+                    glm_project(beziator->points[i], matr, (vec4){0, 0, size.x, size.y}, points[i]);
+                    if (!i) {
+                        minz = points[i][2];
+                        maxz = points[i][2];
+                    } else {
+                        if (minz > points[i][2]) minz = points[i][2];
+                        if (maxz < points[i][2]) maxz = points[i][2];
+                    }
+                }
+                for (size_t i = 0; i < points_size; i++) {
+                    points[i][2] = (maxz - points[i][2]) / (maxz - minz) * 0.6f + 0.4f;
+                }
+                ImVec2 pos, sz;
+                char buf[16];
+                for (size_t i = 0; i < points_size; i++) {
+                    pos.x = points[i][0] + win_pos.x + cursorBegin.x;
+                    pos.y = points[i][1] + win_pos.y + cursorBegin.y;
+                    igPushStyleColorVec4(ImGuiCol_Text, (ImVec4){0,0,0,points[i][2]});
+                    igSetCursorPos((ImVec2){points[i][0] + cursorBegin.x, points[i][1] + cursorBegin.y});
+                    sprintf(buf, "%zu", i);
+                    igCalcTextSize(&sz, buf, NULL, false, 0);
+                    ImDrawList_AddRectFilled(dl, (ImVec2){pos.x-2,pos.y-2}, (ImVec2){pos.x+ sz.x+2, pos.y+ sz.y+2}, igGetColorU32Vec4((ImVec4){0,1,0,points[i][2]}), 4, ImDrawCornerFlags_All);
+                    igText(buf);
+                    igPopStyleColor(1);
+                }
             }
         }
 
         igEnd();
 
+        if (scene->active) {
+            Beziator *beziator = app->models->model.beziator;
+            Object *obj = (Object*)utarray_front(scene->objects);
+
+            igSetNextWindowSize((ImVec2){512, 512}, ImGuiCond_FirstUseEver);
+
+            igBegin("Win2", false, 0);
+            ImVec2 vMin, vMax, size, win_pos;
+            igGetWindowPos(&win_pos);
+            igGetWindowContentRegionMin(&vMin);
+            igGetWindowContentRegionMax(&vMax);
+            size.x = vMax.x-vMin.x; size.y = vMax.y-vMin.y;
+
+            {
+                glBindFramebuffer(GL_FRAMEBUFFER, fbo_ms2);
+
+                glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture_ms2);
+                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, GL_TRUE);
+                glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, texture_ms2, 0);
+
+                glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo2);
+                glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, (GLsizei)size.x, (GLsizei)size.y);
+                glBindRenderbuffer(GL_RENDERBUFFER, 0);
+                glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth_rbo2);
+
+                if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+                    glEnable(GL_DEPTH_TEST);
+                    glViewport(0, 0, (GLsizei)size.x, (GLsizei)size.y);
+                    glClearColor(1, 1, 1, 1);
+                    glClearDepth(1.0);
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                    glActiveTexture(GL_TEXTURE0);
+
+                    shader_use(sh);
+
+                    glm_perspective(45.f * (GLfloat) M_RAD, size.x / size.y,
+                                    0.01f, 100.0f, app->projection);
+                    shader_set_mat4(sh, "projection", app->projection);
+                    shader_set_float(sh, "materialShininess", 32.0f);
+                    shader_set_vec3(sh, "objectColor", (vec3){0,1,0});
+
+                    // directional light
+                    shader_set_vec3(sh, "dirLight.direction", (vec3){0,0,-1});
+                    shader_set_vec3f(sh, "dirLight.ambient", 0.0f, 0.0f, 0.0f);
+                    shader_set_vec3f(sh, "dirLight.diffuse", 0.6f, 0.6f, 0.6f);
+                    shader_set_vec3f(sh, "dirLight.specular", 0.f, 0.f, 0.f);
+
+                    // camera/view transformation
+                    mat4 mat4buf = GLM_MAT4_IDENTITY_INIT;
+                    glm_translate_z(mat4buf, -10);
+                    shader_set_vec3(sh, "viewPos", (vec3){0,0,-10});
+                    shader_set_vec3f(sh, "objectColor", 0.4f, 0.8f, 0.4f);
+                    shader_set_float(sh, "materialShininess", 32.0f);
+                    shader_set_mat4(sh, "camera", mat4buf);
+
+                    shader_set_float(sh, "alpha", 1.0);
+
+                    // render the loaded models
+                    for_each_utarr (Object, i, scene->objects){
+                        object_draw(i, app->mat4buf,
+                                    window_get_delta_time(&app->window));
+                    }
+                } else {
+                    printf("Error\n");
+                }
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+                glBindFramebuffer(GL_FRAMEBUFFER, fbo2);
+
+                glBindTexture(GL_TEXTURE_2D, texture2);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture2, 0);
+                glBindTexture(GL_TEXTURE_2D, 0);
+
+                glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_ms2);
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
+                if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                    printf("error\n");
+                glDrawBuffer(GL_BACK);
+                glBlitFramebuffer(0, 0, size.x, size.y, 0, 0, size.x, size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+                glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            }
+
+            ImVec2 cursorBegin;
+            igGetCursorPos(&cursorBegin);
+            igImage(((void*)(intptr_t)texture2), size, (ImVec2){0, 0}, (ImVec2){1, 1}, (ImVec4){1,1,1,1}, (ImVec4){0,0,0,0});
+
+            igSetCursorPos(cursorBegin);
+            igInvisibleButton("##empty", size, ImGuiButtonFlags_AllowItemOverlap);
+            const bool is_hovered = igIsItemHovered(0);
+            const bool is_active = igIsItemActive();
+            if (is_hovered) {
+                ImGuiIO *io = igGetIO();
+                if (is_active) {
+                    object_rotate_bijective(obj, X, -io->MouseDelta.y / size.y * 2);
+                    object_rotate_bijective(obj, Y, io->MouseDelta.x / size.x * 2);
+                }
+                //camera_translate_bijective(&app->camera, (vec3){0, 0, -io->MouseWheel}, 1);
+            }
+            ImDrawList *dl = igGetWindowDrawList();
+            object_get_mat4(obj, app->mat4buf);
+            mat4 matr = GLM_MAT4_IDENTITY_INIT;
+            glm_mat4_mul(app->mat4buf, matr, matr);
+            mat4 mat4buf = GLM_MAT4_IDENTITY_INIT;
+            glm_translate_z(mat4buf, -10);
+            glm_mat4_mul(mat4buf, matr, matr);
+            glm_mat4_mul(app->projection, matr, matr);
+            float minz = 0, maxz = 0;
+
+            for (size_t i = 0; i < beziator->points_size; i++) {
+                //glm_mat4_mulv(matr, beziator->points[i], p);
+                glm_project(beziator->points[i], matr, (vec4){0, 0, size.x, size.y}, points[i]);
+                if (!i) {
+                    minz = points[i][2];
+                    maxz = points[i][2];
+                } else {
+                    if (minz > points[i][2]) minz = points[i][2];
+                    if (maxz < points[i][2]) maxz = points[i][2];
+                }
+            }
+            for (size_t i = 0; i < points_size; i++) {
+                points[i][2] = (maxz - points[i][2]) / (maxz - minz) * 0.6f + 0.4f;
+            }
+            ImVec2 pos, sz;
+            char buf[16];
+
+            for (size_t i = 0; i < points_size; i++) {
+                pos.x = points[i][0] + win_pos.x + cursorBegin.x;
+                pos.y = points[i][1] + win_pos.y + cursorBegin.y;
+                igPushStyleColorVec4(ImGuiCol_Text, (ImVec4){0,0,0,points[i][2]});
+                igSetCursorPos((ImVec2){points[i][0] + cursorBegin.x, points[i][1] + cursorBegin.y});
+                sprintf(buf, "%zu", i);
+                igCalcTextSize(&sz, buf, NULL, false, 0);
+                ImDrawList_AddRectFilled(dl, (ImVec2){pos.x-2,pos.y-2}, (ImVec2){pos.x+ sz.x+2, pos.y+ sz.y+2}, igGetColorU32Vec4((ImVec4){0,1,0,points[i][2]}), 4, ImDrawCornerFlags_All);
+                igText(buf);
+                igPopStyleColor(1);
+            }
+            igEnd();
+        }
+
         //nk_glfw_render(&app->nkglfw);
         deimgui_render(&app->deimgui);
         window_post_loop(&app->window);
     }
-	glDeleteRenderbuffers(1, &depthrenderbuffer);
-	glDeleteTextures(1, &texture);
-	glDeleteFramebuffers(1, &fbo);
+    glDeleteRenderbuffers(1, &color_rbo);
+    glDeleteRenderbuffers(1, &depth_rbo);
+    glDeleteTextures(1, &texture_ms);
+    glDeleteFramebuffers(1, &fbo_ms);
+    glDeleteFramebuffers(1, &fbo);
+    glDeleteTextures(1, &texture);
+    glDeleteRenderbuffers(1, &color_rbo2);
+    glDeleteRenderbuffers(1, &depth_rbo2);
+    glDeleteTextures(1, &texture_ms2);
+    glDeleteFramebuffers(1, &fbo_ms2);
+    glDeleteFramebuffers(1, &fbo2);
+    glDeleteTextures(1, &texture2);
     return 0;
 }
 
@@ -467,7 +693,7 @@ void app_mouse(Window* window, UNUSED vec2 pos, vec2 offset) {
         //offset_sens[0] *= -1;
 
         camera_rotate(&app->camera, offset_sens[0], Y);
-        camera_rotate(&app->camera, offset_sens[1], X);
+        camera_rotate(&app->camera, -offset_sens[1], X);
     }
     //nk_glfw_mouse_callback(&app->nkglfw, pos, offset);
 }

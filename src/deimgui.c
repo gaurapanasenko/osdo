@@ -7,6 +7,9 @@
 void deimgui_init(DeImgui* deimgui, Window *win) {
     deimgui->ctx = igCreateContext(NULL);
     deimgui->io  = igGetIO();
+    ImGuiIO *io = deimgui->io;
+    ImFontAtlas_AddFontFromFileTTF(io->Fonts, "FantasqueSansMono-Regular.ttf", 14, NULL, NULL);
+    ImFontAtlas_AddFontDefault(io->Fonts, NULL);
 
     const char* glsl_version = "#version 330 core";
     ImGui_ImplGlfw_InitForOpenGL(window_get(win), false);
@@ -35,4 +38,3 @@ void deimgui_update(DeImgui* deimgui) {
 
     //igShowDemoWindow(NULL);
 }
-
