@@ -3,6 +3,7 @@
 #include <cimgui_impl.h>
 #include "deimgui.h"
 #include "window.h"
+#include "conf.h"
 
 void deimgui_init(DeImgui* deimgui, Window *win) {
     deimgui->ctx = igCreateContext(NULL);
@@ -26,12 +27,12 @@ void deimgui_del(DeImgui* deimgui) {
 }
 
 
-void deimgui_render(DeImgui* deimgui) {
+void deimgui_render(UNUSED DeImgui* deimgui) {
     igRender();
     ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
 }
 
-void deimgui_update(DeImgui* deimgui) {
+void deimgui_update(UNUSED DeImgui* deimgui) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     igNewFrame();

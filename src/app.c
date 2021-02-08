@@ -99,7 +99,7 @@ int app_loop(App *app) {
     char text[128];
     vec4 *position, direction;
     vec3 rotation, *animation;
-    Bijective bijective;
+    Bijective *bijective;
     bool light = false;
     vec4 *points = NULL;
     size_t points_size = 0;
@@ -135,12 +135,10 @@ int app_loop(App *app) {
         else snprintf(text, 128, "Camera");
 
         if (scene->active) {
-            bijective.bijective.object = (void*)utarray_eltptr(
+            bijective = (void*)utarray_eltptr(
                          scene->objects, (unsigned)scene->active - 1);
-            bijective.type = &object_bijective;
         } else {
-            bijective.bijective.camera = &app->camera;
-            bijective.type = &camera_bijective;
+            bijective = (void*)&app->camera;
         }
         bijective_get_position(bijective, &position);
         bijective_get_animation(bijective, &animation);
@@ -260,7 +258,11 @@ int app_loop(App *app) {
         igCheckbox("Wireframe", &app->scene.wireframe);
         igCheckbox("Light", &light);
         igText("Active element: %s", text);
-        igSliderInt("", &scene->active, 0, (int)utarray_len(scene->objects), "%i", 0);
+        {
+            const ImU64 u64_zero = 0;
+            const ImU64 length = utarray_len(scene->objects);
+            igSliderScalar("", ImGuiDataType_U64, &scene->active, &u64_zero, &length, "%i", 0);
+        }
         igInputFloat3("Potision", *position, "%g", 0);
         igInputFloat3("Rotation", rotation, "%g", 0);
         igInputFloat3("Animation", *animation, "%g", 0);
@@ -268,7 +270,7 @@ int app_loop(App *app) {
 
         if (scene->active) {
             Beziator *beziator = app->models->model.beziator;
-            Object *obj = (Object*)utarray_front(scene->objects);
+            Object *obj = (void*)utarray_front(scene->objects);
 
             mat4 matr = GLM_MAT4_IDENTITY_INIT;
             //glm_scale(matr, (vec3){(float)app->window.size[0], (float)app->window.size[1], 1});
@@ -456,7 +458,7 @@ int app_loop(App *app) {
             ImDrawList *dl = igGetWindowDrawList();
             if (app->scene.active) {
                 Beziator *beziator = app->models->model.beziator;
-                Object *obj = (Object*)utarray_front(scene->objects);
+                Object *obj = (void*)utarray_front(scene->objects);
                 object_get_mat4(obj, app->mat4buf);
                 mat4 matr = GLM_MAT4_IDENTITY_INIT;
                 glm_mat4_mul(app->mat4buf, matr, matr);
@@ -506,7 +508,7 @@ int app_loop(App *app) {
 
         if (scene->active) {
             Beziator *beziator = app->models->model.beziator;
-            Object *obj = (Object*)utarray_front(scene->objects);
+            Object *obj = (void*)utarray_front(scene->objects);
 
             igSetNextWindowSize((ImVec2){512, 512}, ImGuiCond_FirstUseEver);
 
@@ -809,16 +811,14 @@ static mat3 m3i = GLM_MAT3_IDENTITY_INIT;
 void app_process_input(App *app) {
     Window *window = &app->window;
     Scene *scene = &app->scene;
-    Bijective bijective;
+    Bijective *bijective;
     float t;
     GLfloat delta_time = (GLfloat)window_get_delta_time(window);
     if (scene->active) {
-        bijective.bijective.object = (void*)utarray_eltptr(
+        bijective = (void*)utarray_eltptr(
                      scene->objects, (unsigned)scene->active - 1);
-        bijective.type = &object_bijective;
     } else {
-        bijective.bijective.camera = &app->camera;
-        bijective.type = &camera_bijective;
+        bijective = (void*)&app->camera;
     }
 
     if (window_is_key_pressed(window, KEY_LEFT_CONTROL))

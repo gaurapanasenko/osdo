@@ -8,6 +8,7 @@
 #include "shader.h"
 
 typedef struct Object {
+    Bijective bijective;
     mat4 transform;
     vec4 position;
     vec3 animation;
@@ -41,7 +42,7 @@ void object_set_animation(Object *object, vec3 angles, float delta_time);
 
 void object_scale(Object *object, vec3 scale);
 
-static const BijectiveType object_bijective = {
+static const BijectiveVtbl object_bijective = {
     object_get_position_bijective,
     object_get_mat4,
     object_translate_bijective,
@@ -52,6 +53,7 @@ static const BijectiveType object_bijective = {
 };
 
 #define OBJECT_INIT(model, shader) {\
+    {&object_bijective}, \
     GLM_MAT4_IDENTITY_INIT,\
     GLM_VEC4_BLACK_INIT,\
     GLM_VEC3_ZERO_INIT, model, shader}

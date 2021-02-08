@@ -3,60 +3,69 @@
 
 #include "osdo.h"
 
-typedef union __attribute__((transparent_union)) bijective_t {
-   struct Object *object;
-   struct Camera *camera;
-} bijective_t;
-
-typedef void (*get_position_cb)(
-        bijective_t bijective, vec4 **position);
-typedef void (*get_mat4_cb)(
-        bijective_t bijective, mat4 matrix);
-typedef void (*translate_cb)(
-        bijective_t bijective, vec3 distances, float delta_time);
-typedef void (*rotate_cb)(
-        bijective_t bijective, enum coord_enum coord, float delta_time);
-typedef void (*rotate_all_cb)(
-        bijective_t bijective, vec3 angles);
-typedef void (*get_animation_cb)(
-        bijective_t bijective, vec3 **animation);
-typedef void (*set_animation_cb)(
-        bijective_t bijective, vec3 angles, float delta_time);
-
-typedef struct BijectiveType {
-    get_position_cb get_position;
-    get_mat4_cb get_mat4;
-    translate_cb translate;
-    rotate_cb rotate;
-    rotate_all_cb rotate_all;
-    get_animation_cb get_animation;
-    set_animation_cb set_animation;
-} BijectiveType;
+struct BijectiveVtbl;
 
 typedef struct Bijective {
-    bijective_t bijective;
-    const BijectiveType *type;
+    const struct BijectiveVtbl *vtbl;
 } Bijective;
 
-void bijective_get_position(
-        Bijective bijective, vec4 **position);
+typedef union __attribute__((transparent_union)) bijective_t {
+    Bijective *self;
+    void *other;
+    struct Object *object;
+    struct Camera *camera;
+} bijective_t;
 
-void bijective_get_mat4(
-        Bijective bijective, mat4 matrix);
+typedef struct BijectiveVtbl {
+    void (*get_position)(
+            bijective_t self, vec4 **position);
+    void (*get_mat4)(
+            bijective_t self, mat4 matrix);
+    void (*translate)(
+            bijective_t self, vec3 distances, float delta_time);
+    void (*rotate)(
+            bijective_t self, enum coord_enum coord, float delta_time);
+    void (*rotate_all)(
+            bijective_t self, vec3 angles);
+    void (*get_animation)(
+            bijective_t self, vec3 **animation);
+    void (*set_animation)(
+            bijective_t self, vec3 angles, float delta_time);
+} BijectiveVtbl;
 
-void bijective_translate(
-        Bijective bijective, vec3 distances, float delta_time);
+static inline void bijective_get_position(
+        Bijective *self, vec4 **position) {
+    self->vtbl->get_position((bijective_t){self}, position);
+}
 
-void bijective_rotate(
-        Bijective bijective, enum coord_enum coord, float delta_time);
+static inline void bijective_get_mat4(
+        Bijective *self, mat4 matrix) {
+    self->vtbl->get_mat4((bijective_t){self}, matrix);
+}
 
-void bijective_rotate_all(
-        Bijective bijective, vec3 angles);
+static inline void bijective_translate(
+        Bijective *self, vec3 distances, float delta_time) {
+    self->vtbl->translate((bijective_t){self}, distances, delta_time);
+}
 
-void bijective_get_animation(
-        Bijective bijective, vec3 **animation);
+static inline void bijective_rotate(
+        Bijective *self, enum coord_enum coord, float delta_time) {
+    self->vtbl->rotate((bijective_t){self}, coord, delta_time);
+}
 
-void bijective_set_animation(
-        Bijective bijective, vec3 angles, float delta_time);
+static inline void bijective_rotate_all(
+        Bijective *self, vec3 angles) {
+    self->vtbl->rotate_all((bijective_t){self}, angles);
+}
+
+static inline void bijective_get_animation(
+        Bijective *self, vec3 **animation) {
+    self->vtbl->get_animation((bijective_t){self}, animation);
+}
+
+static inline void bijective_set_animation(
+        Bijective *self, vec3 angles, float delta_time) {
+    self->vtbl->set_animation((bijective_t){self}, angles, delta_time);
+}
 
 #endif // BIJECTIVE_H

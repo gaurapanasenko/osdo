@@ -11,6 +11,8 @@
     for(type *item = (type*)(void*)utarray_front(list); item != NULL; \
         item = (type*)(void*)utarray_next(list, item))
 
+#define GAP(i, s)  char gap_##i [s];
+
 enum coord_enum {X = 0, Y = 1, Z = 2};
 
 #endif // OSDO_H
