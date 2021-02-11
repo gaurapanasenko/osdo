@@ -25,7 +25,7 @@ bool beziator_init(
         free(path);
         return false;
     }
-    free(path);
+    beziator->path = path;
 
     fscanf(file, "%lu%lu", &beziator->points_size, &beziator->surfaces_size);
     beziator->points = (vec4*)calloc(beziator->points_size, sizeof(vec4));
@@ -76,6 +76,7 @@ void beziator_del(Beziator *beziator) {
     mesh_del(&beziator->mesh);
     mesh_del(&beziator->frame);
     mesh_del(&beziator->normals);
+    free(beziator->path);
 }
 
 void beziator_free(Beziator *beziator) {
@@ -87,7 +88,7 @@ void beziator_draw(Beziator *beziator) {
     //shader_set_vec3(beziator->editmode, "min_coord", beziator->min_coord);
     //shader_set_vec3(beziator->editmode, "max_coord", beziator->max_coord);
     //mesh_draw_mode(&beziator->frame, GL_POINTS);
-    mesh_draw_mode(&beziator->frame, GL_LINES);
+    //mesh_draw_mode(&beziator->frame, GL_LINES);
     shader_set_float(beziator->editmode, "alpha", 0.5f);
     mesh_draw_mode(&beziator->mesh, GL_TRIANGLES);
     //mesh_draw_mode(&beziator->normals, GL_LINES);
@@ -132,6 +133,30 @@ void bezier_surface(
     bezier_curve_tangent(u, res2, res3[3]);
 
     glm_cross(res3[1], res3[3], normal);
+}
+
+bool beziator_save(Beziator *beziator) {
+    FILE *file = fopen(beziator->path, "w");
+    if (file == NULL) {
+        printf("ERROR: failed to open file %s\n", beziator->path);
+        return false;
+    }
+    vec4 *point;
+    fprintf(file, "%lu %lu\n", beziator->points_size, beziator->surfaces_size);
+    for (size_t i = 0; i < beziator->points_size; i++) {
+        point = &beziator->points[i];
+        fprintf(file, "%f %f %f\n", (*point)[0], (*point)[1], (*point)[2]);
+    }
+    int j, k;
+    for (size_t i = 0; i < beziator->surfaces_size; i++) {
+        for (j = 0; j < 4; j++)
+            for (k = 0; k < 4; k++) {
+                fprintf(file, "%i ", beziator->surfaces[i][j][k]);
+            }
+        fprintf(file, "\n");
+    }
+    fclose(file);
+    return true;
 }
 
 bool beziator_generate(Beziator *beziator) {

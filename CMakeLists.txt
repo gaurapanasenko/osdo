@@ -33,9 +33,9 @@ target_compile_options(${PROJECT_NAME} PUBLIC -Wall -std=c99 -pedantic)
 #target_include_directories(${PROJECT_NAME} PUBLIC src/main)
 
 # This copies all resource files in the build directory.
-add_custom_target(${PROJECT_NAME}_res ALL
-  COMMAND ${CMAKE_COMMAND} -E make_directory "share/${PROJECT_NAME}/"
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_FILES} "share/${PROJECT_NAME}/")
+#add_custom_target(${PROJECT_NAME}_res ALL
+#  COMMAND ${CMAKE_COMMAND} -E make_directory "share/${PROJECT_NAME}/"
+#  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_FILES} "share/${PROJECT_NAME}/")
 
 # Set resource files to target properties.
 #set_target_properties(${PROJECT_NAME} PROPERTIES

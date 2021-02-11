@@ -45,9 +45,9 @@ int app_init(App *app) {
         model = model_create("teapot", model_ch, &beziator_type);
         beziator_generate(model_ch.beziator);
         object_init(&object, model, shader);
-        object_translate(&object, (vec3){0, -5, 0});
+        object_translate(&object, (vec3){-5, 5, 0});
         object_scale(&object, (vec3){4, 4, 4});
-        object_rotate(&object, -M_PI_F / 3.f, X);
+        object_rotate(&object, M_PI_F / 1.1f, X);
         HASH_ADD_STR(app->models, name, model);
         utarray_push_back(app->objects, &object);
 
@@ -300,6 +300,8 @@ int app_loop(App *app) {
             igBegin("Bezier mesh", NULL, 0);
             if (igButton("Regenerate", (ImVec2){0, 0}))
                 beziator_generate(beziator);
+            if (igButton("Save", (ImVec2){0, 0}))
+                beziator_save(beziator);
             igBeginChildStr("Control points", (ImVec2){igGetWindowContentRegionWidth(), 260}, true, 0);
             bool changed = false;
             for (int i = 0; i < (int)beziator->points_size; i++) {
@@ -314,6 +316,10 @@ int app_loop(App *app) {
             for (int i = 0; i < (int)beziator->surfaces_size; i++) {
                 igPushIDInt(i);
                 igText("%i", i);
+                if (igButton("Invert light normals", (ImVec2){0, 0})) {
+                    beziator_rotate(beziator, i);
+                    beziator_generate(beziator);
+                }
                 changed |= igInputInt4("##first", beziator->surfaces[i][0], 0);
                 changed |= igInputInt4("##second", beziator->surfaces[i][1], 0);
                 changed |= igInputInt4("##third", beziator->surfaces[i][2], 0);
@@ -372,7 +378,7 @@ int app_loop(App *app) {
                 // directional light
                 camera_get_direction(&app->camera, direction);
                 if (!light)
-                    shader_set_vec3(sh, "dirLight.direction", (vec3){0,-1,0});
+                    shader_set_vec3(sh, "dirLight.direction", (vec3){0,0,-0.5});
                 else
                     shader_set_vec3(sh, "dirLight.direction", direction);
                 shader_set_vec3f(sh, "dirLight.ambient", 0.0f, 0.0f, 0.0f);

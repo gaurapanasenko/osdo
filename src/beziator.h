@@ -11,6 +11,7 @@ typedef vec4 *surface_t[4][4];
 typedef int surfacei_t[4][4];
 
 typedef struct Beziator {
+    char *path;
     size_t points_size, surfaces_size;
     vec4 *points;
     surfacei_t *surfaces;
@@ -30,10 +31,19 @@ void beziator_draw(Beziator *beziator);
 
 bool beziator_generate(Beziator *beziator);
 
-void beziator_save(Beziator *beziator);
+bool beziator_save(Beziator *beziator);
 
 static const ModelType beziator_type = {
     beziator_draw, beziator_generate, beziator_free,
 };
+
+static inline void beziator_rotate(Beziator *beziator, size_t i) {
+    surfacei_t s;
+    memcpy(s, beziator->surfaces[i], sizeof(surfacei_t));
+    for (int k = 0; k < 4; k++)
+        for (int j = 0; j < 4; j++) {
+            beziator->surfaces[i][k][j] = s[j][k];
+        }
+}
 
 #endif // BEZIATOR_H
