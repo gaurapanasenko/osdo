@@ -13,6 +13,11 @@
 
 #define GAP(i, s)  char gap_##i [s];
 
+#define max(a,b) \
+  ({ __typeof__ (a) _a = (a); \
+      __typeof__ (b) _b = (b); \
+    _a > _b ? _a : _b; })
+
 enum coord_enum {X = 0, Y = 1, Z = 2};
 
 #endif // OSDO_H

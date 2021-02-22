@@ -33,9 +33,9 @@ target_compile_options(${PROJECT_NAME} PUBLIC -Wall -std=c99 -pedantic)
 #target_include_directories(${PROJECT_NAME} PUBLIC src/main)
 
 # This copies all resource files in the build directory.
-#add_custom_target(${PROJECT_NAME}_res ALL
-#  COMMAND ${CMAKE_COMMAND} -E make_directory "share/${PROJECT_NAME}/"
-#  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_FILES} "share/${PROJECT_NAME}/")
+add_custom_target(${PROJECT_NAME}_res ALL
+  COMMAND ${CMAKE_COMMAND} -E make_directory "share/${PROJECT_NAME}/"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_FILES} "share/${PROJECT_NAME}/")
 
 # Set resource files to target properties.
 #set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -45,47 +45,44 @@ target_compile_options(${PROJECT_NAME} PUBLIC -Wall -std=c99 -pedantic)
 ## dependencies ###############################################################
 ###############################################################################
 
-#find_package(ECM)
-#set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR} ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+set(DE_LIBRARIES m)
+set(DE_INCLUDE_DIRS )
 
 # Math
-find_library(M_LIBRARY m REQUIRED)
+find_library(M_LIBRARIES m REQUIRED)
+list(APPEND DE_LIBRARIES ${M_LIBRARIES})
 
 # OpenGL
 find_package(OpenGL REQUIRED)
-include_directories(${OpenGL_INCLUDE_DIRS})
-
-# GL
-find_library(GL_LIBRARY GL REQUIRED)
+list(APPEND DE_INCLUDE_DIRS ${OPENGL_INCLUDE_DIR})
+list(APPEND DE_LIBRARIES ${OPENGL_LIBRARIES})
 
 # GLEW
 find_package(GLEW REQUIRED)
-include_directories(${GLEW_INCLUDE_DIRS})
+list(APPEND DE_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS})
+list(APPEND DE_LIBRARIES ${GLEW_LIBRARIES})
 
 # CGLM
-#find_package(CGLM REQUIRED)
-find_library(CGLM_LIBRARY cglm REQUIRED)
+find_package(cglm REQUIRED)
+list(APPEND DE_LIBRARIES ${CGLM_LIBRARY})
 
 # GLFW
 find_package(glfw3 REQUIRED)
-include_directories(${glfw3_INCLUDE_DIRS})
-find_library(GLFW_LIBRARY glfw REQUIRED)
+find_library(glfw3_LIBRARY glfw REQUIRED)
+list(APPEND DE_LIBRARIES ${glfw3_LIBRARY})
 
 # uthash
 find_file(uthash_INCLUDE_FILE uthash.h REQUIRED)
 
+# cimgui
+find_package(cimgui REQUIRED)
+list(APPEND DE_LIBRARIES ${CIMGUI_LIBRARIES})
+
 # Nuklear
 #include_directories(nuklear)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC
-  ${OpenGL_LIBRARIES} ${OpenGL_opengl_LIBRARY}
-  ${GL_LIBRARY}
-  ${GLEW_LIBRARIES}
-  ${glfw3_LIBRARIES} ${GLFW_LIBRARY}
-  ${CGLM_LIBRARY}
-  ${M_LIBRARY}
-  cimgui
-)
+target_include_directories(${PROJECT_NAME} PRIVATE ${DE_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${DE_LIBRARIES})
 
 ###############################################################################
 ## packaging ##################################################################

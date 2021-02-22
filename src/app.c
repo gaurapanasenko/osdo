@@ -337,7 +337,7 @@ int app_loop(App *app) {
         igGetWindowPos(&win_pos);
         igGetWindowContentRegionMin(&vMin);
         igGetWindowContentRegionMax(&vMax);
-        size.x = vMax.x-vMin.x; size.y = vMax.y-vMin.y;
+        size.x = max(vMax.x-vMin.x, 5); size.y = max(vMax.y-vMin.y, 5);
 
         {
             glBindFramebuffer(GL_FRAMEBUFFER, fbo_ms);
@@ -523,7 +523,7 @@ int app_loop(App *app) {
             igGetWindowPos(&win_pos);
             igGetWindowContentRegionMin(&vMin);
             igGetWindowContentRegionMax(&vMax);
-            size.x = vMax.x-vMin.x; size.y = vMax.y-vMin.y;
+            size.x = max(vMax.x-vMin.x, 5); size.y = max(vMax.y-vMin.y, 5);
 
             {
                 glBindFramebuffer(GL_FRAMEBUFFER, fbo_ms2);
