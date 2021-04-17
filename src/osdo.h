@@ -20,4 +20,12 @@
 
 enum coord_enum {X = 0, Y = 1, Z = 2};
 
+#ifdef __GNUC__
+#define UNUSED __attribute__ ((unused))
+#else
+#define UNUSED
+#endif
+
+typedef int DeInt;
+
 #endif // OSDO_H
