@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
-project(osdo LANGUAGES C)
+project(osdo LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ###############################################################################
 ## configuration ##############################################################
@@ -16,7 +18,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # These instructions search the directory tree when cmake is
 # invoked and put all files that match the pattern in the variables
 # `SOURCE_FILES` and `RESOURCE_FILES`.
-file(GLOB SOURCE_FILES src/*.c src/*.h)
+file(GLOB SOURCE_FILES src/*.cpp src/*.h)
 file(GLOB RESOURCE_FILES res/*)
 
 ###############################################################################
@@ -25,7 +27,17 @@ file(GLOB RESOURCE_FILES res/*)
 
 # The data is just added to the executable, because in some IDEs (QtCreator)
 # files are invisible when they are not explicitly part of the project.
-add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${RESOURCE_FILES})
+add_executable(${PROJECT_NAME}
+    ${SOURCE_FILES}
+    ${RESOURCE_FILES}
+    deps/imgui/imgui.cpp
+    deps/imgui/imgui_draw.cpp
+    deps/imgui/imgui_demo.cpp
+    deps/imgui/imgui_widgets.cpp
+    deps/imgui/imgui_tables.cpp
+    deps/imgui/backends/imgui_impl_glfw.cpp
+    deps/imgui/backends/imgui_impl_opengl3.cpp
+    deps/ImGui-Addons/FileBrowser/ImGuiFileBrowser.cpp)
 
 target_compile_options(${PROJECT_NAME} PUBLIC -Wall -std=c99 -pedantic)
 
@@ -46,7 +58,10 @@ add_custom_target(${PROJECT_NAME}_res ALL
 ###############################################################################
 
 set(DE_LIBRARIES m)
-set(DE_INCLUDE_DIRS )
+set(DE_INCLUDE_DIRS
+    deps/imgui
+    deps/imgui/backends
+    deps/ImGui-Addons/FileBrowser)
 
 # Math
 find_library(M_LIBRARIES m REQUIRED)
@@ -71,15 +86,21 @@ find_package(glfw3 REQUIRED)
 find_library(glfw3_LIBRARY glfw REQUIRED)
 list(APPEND DE_LIBRARIES ${glfw3_LIBRARY})
 
-# uthash
-find_file(uthash_INCLUDE_FILE uthash.h REQUIRED)
-
-# cimgui
-find_package(cimgui REQUIRED)
-list(APPEND DE_LIBRARIES ${CIMGUI_LIBRARIES})
-
-# Nuklear
-#include_directories(nuklear)
+# EASTL
+#add_subdirectory(deps/EASTL)
+#add_subdirectory(deps/EASTL/test/packages/EABase)
+set(EASTL_ROOT_DIR deps/EASTL)
+list(APPEND DE_INCLUDE_DIRS
+    ${EASTL_ROOT_DIR}/include
+    ${EASTL_ROOT_DIR}/test/packages/EAAssert/include
+    ${EASTL_ROOT_DIR}/test/packages/EABase/include/Common
+    ${EASTL_ROOT_DIR}/test/packages/EAMain/include
+    ${EASTL_ROOT_DIR}/test/packages/EAStdC/include
+    ${EASTL_ROOT_DIR}/test/packages/EATest/include
+    ${EASTL_ROOT_DIR}/test/packages/EAThread/include)
+#set(EASTL_LIBRARY debug ${EASTL_ROOT_DIR}/build/Debug/EASTL.lib optimized ${EASTL_ROOT_DIR}/build/Release/EASTL.lib)
+#add_custom_target(NatVis SOURCES ${EASTL_ROOT_DIR}/doc/EASTL.natvis)
+list(APPEND DE_LIBRARIES ${EASTL_LIBRARY})
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${DE_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${DE_LIBRARIES})

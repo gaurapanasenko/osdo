@@ -3,7 +3,7 @@
 int main() {
     int status;
     App app;
-    status = app_init(&app);
+    status = app.init();
     if (status) return status;
-    return app_loop(&app);
+    return app.loop();
 }

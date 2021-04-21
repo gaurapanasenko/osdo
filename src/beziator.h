@@ -6,44 +6,41 @@
 #include "shader.h"
 #include "mesh.h"
 #include "model.h"
+#include "easyvector.h"
+template<class T>
+using EasyVector = DE::vector<T>;
 
 typedef vec4 *surface_t[4][4];
 typedef int surfacei_t[4][4];
 
-typedef struct Beziator {
+class Beziator : public Model {
+    typedef EasyVector<vec4> points_vector;
+    typedef EasyVector<surfacei_t> surfaces_vector;
+    char name[64];
     char *path;
-    size_t points_size, surfaces_size;
-    vec4 *points;
-    surfacei_t *surfaces;
+    points_vector points;
+    surfaces_vector surfaces;
     Mesh mesh, frame, normals;
-    Shader *editmode;
+    shared_ptr<Shader> editmode;
     Model model;
-} Beziator;
+public:
+    Beziator(const char *name, shared_ptr<Shader> editmode);
+    ~Beziator() override;
 
-bool beziator_init(
-        Beziator *beziator, const char *name, Shader *editmode);
-Beziator *beziator_create(const char *name, Shader *editmode);
+    bool init();
 
-void beziator_del(Beziator *beziator);
-void beziator_free(Beziator *beziator);
+    void draw() override;
 
-void beziator_draw(Beziator *beziator);
+    void generate() override;
 
-bool beziator_generate(Beziator *beziator);
+    bool save();
 
-bool beziator_save(Beziator *beziator);
+    void rotate(size_t i);
 
-static const ModelType beziator_type = {
-    beziator_draw, beziator_generate, beziator_free,
+    void edit_panel(mat4 matr);
+
+    const points_vector &get_points();
+    const surfaces_vector &get_surfaces();
 };
-
-static inline void beziator_rotate(Beziator *beziator, size_t i) {
-    surfacei_t s;
-    memcpy(s, beziator->surfaces[i], sizeof(surfacei_t));
-    for (int k = 0; k < 4; k++)
-        for (int j = 0; j < 4; j++) {
-            beziator->surfaces[i][k][j] = s[j][k];
-        }
-}
 
 #endif // BEZIATOR_H

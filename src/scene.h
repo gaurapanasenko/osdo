@@ -5,9 +5,14 @@
 
 #include "object.h"
 
-typedef struct Scene {
-    UT_array *objects;
+/*#include "EASTL/vector.h"
+using namespace eastl;*/
 
+#include "vector"
+using std::vector;
+
+struct Scene {
+    vector<Object> objects;
     // active element
     size_t active;
 
@@ -18,10 +23,7 @@ typedef struct Scene {
     bool pointLight1On;
     bool pointLight2On;
     bool spotLightOn;
-} Scene;
-
-void scene_init(Scene *scene, UT_array *objects);
-
-void scene_del(Scene *scene);
+    Scene(const vector<Object>& objects = {});
+};
 
 #endif // SCENE_H

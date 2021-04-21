@@ -35,20 +35,20 @@ enum BUTTONS {
     MOUSE_BUTTON_DOUBLE,
 };
 
-struct Window;
+class Window;
 
 typedef void (*scroll_cb_t)(
-        struct Window *window, GLdouble xoffset, GLdouble yoffset);
+        Window *window, GLdouble xoffset, GLdouble yoffset);
 typedef void (*mouse_motion_cb_t)(
-        struct Window *window, vec2 pos, vec2 offset);
+        Window *window, vec2 pos, vec2 offset);
 typedef void (*char_cb_t)(
-        struct Window *window, unsigned int codepoint);
+        Window *window, unsigned int codepoint);
 typedef void (*mouse_button_cb_t)(
-        struct Window *window, enum BUTTONS button, bool pressed);
+        Window *window, enum BUTTONS button, bool pressed);
 typedef void (*key_cb_t)(
-        struct Window *window, enum KEYS key, bool pressed);
+        Window *window, enum KEYS key, bool pressed);
 
-typedef struct Window {
+class Window {
     struct GLFWwindow *window;
     void *user_pointer;
 
@@ -58,63 +58,62 @@ typedef struct Window {
     bool mouse_capute;
     double last_click_time, current_time, last_time, delta_time;
 
-    scroll_cb_t scroll_cb;
-    mouse_motion_cb_t mouse_motion_cb;
-    char_cb_t char_cb;
-    mouse_button_cb_t mouse_button_cb;
-    key_cb_t key_cb;
-} Window;
+    scroll_cb_t _scroll_cb;
+    mouse_motion_cb_t _mouse_motion_cb;
+    char_cb_t _char_cb;
+    mouse_button_cb_t _mouse_button_cb;
+    key_cb_t _key_cb;
+public:
+    ~Window();
 
-int window_init(Window *window);
-void window_del(Window *window);
+    int init();
 
-struct GLFWwindow* window_get(Window *window);
+    struct GLFWwindow* get();
 
-bool window_alive(Window *window);
-bool window_pre_loop(Window *window);
-void window_post_loop(Window *window);
+    bool alive();
+    bool pre_loop();
+    void post_loop();
 
-void window_set_user_pointer(Window *window, void *pointer);
-void *window_get_user_pointer(Window *window);
+    void set_user_pointer(void *pointer);
+    void *get_user_pointer();
 
-float window_get_resolution(Window *window);
+    float get_resolution();
 
-double window_get_delta_time(Window *window);
+    double get_delta_time();
 
-const char * window_get_clipboard(Window *window);
-void window_set_clipboard(Window *window, const char * str);
+    const char * get_clipboard();
+    void set_clipboard(const char * str);
 
-bool window_is_mouse_caputed(Window *window);
-void window_grab_mouse(Window *window, bool grab);
+    bool is_mouse_caputed();
+    void grab_mouse(bool grab);
 
-bool window_is_key_pressed(Window *window, enum KEYS key);
-bool window_is_mouse_pressed(Window *window, enum BUTTONS key);
+    bool is_key_pressed(enum KEYS key);
+    bool is_mouse_pressed(enum BUTTONS key);
 
-void window_get_cursor(Window *window, vec2 dest);
-void window_set_cursor(Window *window, vec2 coords);
+    void get_cursor(vec2 dest);
+    void set_cursor(vec2 coords);
 
-int *window_get_size(Window *window);
-int *window_get_display(Window *window);
-float *window_get_scale(Window *window);
+    int *get_size();
+    int *get_display();
+    float *get_scale();
 
-void window_set_scroll_cb(Window *window, scroll_cb_t callback);
-void window_set_mouse_motion_cb(
-        Window *window, mouse_motion_cb_t callback);
-void window_set_char_cb(Window *window, char_cb_t callback);
-void window_set_mouse_button_cb(
-        Window *window, mouse_button_cb_t callback);
-void window_set_key_cb(Window *window, key_cb_t callback);
+    void set_scroll_cb(scroll_cb_t callback);
+    void set_mouse_motion_cb(mouse_motion_cb_t callback);
+    void set_char_cb(char_cb_t callback);
+    void set_mouse_button_cb(mouse_button_cb_t callback);
+    void set_key_cb(key_cb_t callback);
 
-void window_resize_cb(
-        struct GLFWwindow* window, GLint width, GLint height);
-void window_scroll_cb(
-        struct GLFWwindow* window, GLdouble xoffset, GLdouble yoffset);
-void window_mouse_motion_cb(
-        struct GLFWwindow* window, double xpos, double ypos);
-void window_char_cb(struct GLFWwindow* window, unsigned int codepoint);
-void window_mouse_button_cb(
-        struct GLFWwindow *window, int button, int action, int mods);
-void window_key_cb(struct GLFWwindow* window, int key, int scancode,
-                   int action, int mods);
+    static void resize_cb(
+            struct GLFWwindow* window, GLint width, GLint height);
+    static void scroll_cb(
+            struct GLFWwindow* window, GLdouble xoffset, GLdouble yoffset);
+    static void mouse_motion_cb(
+            struct GLFWwindow* window, double xpos, double ypos);
+    static void char_cb(struct GLFWwindow* window, unsigned int codepoint);
+    static void mouse_button_cb(
+            struct GLFWwindow *window, int button, int action, int mods);
+    static void key_cb(struct GLFWwindow* window, int key, int scancode,
+                       int action, int mods);
+};
 
 #endif // WINDOW_H

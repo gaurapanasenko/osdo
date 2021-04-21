@@ -1,9 +1,9 @@
 #include "window.h"
 #include "conf.h"
 #include <GLFW/glfw3.h>
-#define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
-#include <cimgui.h>
-#include <cimgui_impl.h>
+#include <imgui.h>
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl2.h"
 
 typedef struct key_map_t {
     enum KEYS key;
@@ -85,7 +85,7 @@ void error_callback(int e, const char *d) {
     printf("Error %d: %s\n", e, d);
 }
 
-int window_init(Window *win) {
+int Window::init() {
     // glfw: initialize and configure
     // ------------------------------
     map_init();
@@ -104,21 +104,21 @@ int window_init(Window *win) {
     // glfw window creation
     // --------------------
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "osdo",
-                                          NULL, NULL);
-    if (window == NULL) {
+                                          nullptr, nullptr);
+    if (window == nullptr) {
         printf("Failed to create GLFW window\n");
         glfwTerminate();
         return -1;
     }
 
     glfwMakeContextCurrent(window);
-    glfwSetWindowUserPointer(window, win);
-    glfwSetFramebufferSizeCallback(window, window_resize_cb);
-    glfwSetScrollCallback(window, window_scroll_cb);
-    glfwSetCharCallback(window, window_char_cb);
-    glfwSetMouseButtonCallback(window, window_mouse_button_cb);
-    glfwSetCursorPosCallback(window, window_mouse_motion_cb);
-    glfwSetKeyCallback(window, window_key_cb);
+    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, Window::resize_cb);
+    glfwSetScrollCallback(window, Window::scroll_cb);
+    glfwSetCharCallback(window, Window::char_cb);
+    glfwSetMouseButtonCallback(window, Window::mouse_button_cb);
+    glfwSetCursorPosCallback(window, Window::mouse_motion_cb);
+    glfwSetKeyCallback(window, Window::key_cb);
 
     // load glew
     // ---------
@@ -128,175 +128,176 @@ int window_init(Window *win) {
         return -1;
     }
 
-    win->size[0] = SCR_WIDTH;
-    win->size[1] = SCR_HEIGHT;
-    win->mouse_capute = false;
-    win->window = window;
-    win->current_time = glfwGetTime();
-    win->last_time = win->current_time;
-    win->delta_time = 0;
-    win->scroll_cb = NULL;
-    win->mouse_motion_cb = NULL;
-    win->char_cb = NULL;
-    win->mouse_button_cb = NULL;
-    win->key_cb = NULL;
+    this->size[0] = SCR_WIDTH;
+    this->size[1] = SCR_HEIGHT;
+    this->mouse_capute = false;
+    this->window = window;
+    this->current_time = glfwGetTime();
+    this->last_time = this->current_time;
+    this->delta_time = 0;
+    this->_scroll_cb = nullptr;
+    this->_mouse_motion_cb = nullptr;
+    this->_char_cb = nullptr;
+    this->_mouse_button_cb = nullptr;
+    this->_key_cb = nullptr;
     return 0;
 }
 
-void window_del(UNUSED Window *window) {
+Window::~Window() {
     glfwTerminate();
 }
 
 
-GLFWwindow *window_get(Window *window) {
-    return window->window;
+GLFWwindow *Window::get() {
+    return this->window;
 }
 
 
-bool window_alive(Window *window) {
-    return !glfwWindowShouldClose(window->window);
+bool Window::alive() {
+    return !glfwWindowShouldClose(this->window);
 }
 
-bool window_pre_loop(Window *window) {
-    if (glfwWindowShouldClose(window->window)) return false;
-    glfwMakeContextCurrent(window->window);
+bool Window::pre_loop() {
+    if (glfwWindowShouldClose(this->window)) return false;
+    glfwMakeContextCurrent(this->window);
     glfwPollEvents();
     //glfwWaitEvents();
-    glfwGetWindowSize(window->window, window->size, window->size + 1);
+    glfwGetWindowSize(this->window, this->size, this->size + 1);
     glfwGetFramebufferSize(
-                window->window, window->display, window->display + 1);
-    window->scale[0] = (float)window->display[0] / (float)window->size[0];
-    window->scale[1] = (float)window->display[1] / (float)window->size[1];
-    window->current_time = glfwGetTime();
-    window->delta_time = window->current_time - window->last_time;
-    window->last_time = window->current_time;
+                this->window, this->display, this->display + 1);
+    this->scale[0] = (float)this->display[0] / (float)this->size[0];
+    this->scale[1] = (float)this->display[1] / (float)this->size[1];
+    this->current_time = glfwGetTime();
+    this->delta_time = this->current_time - this->last_time;
+    this->last_time = this->current_time;
     return true;
 }
 
-void window_post_loop(Window *window) {
-    glfwSwapBuffers(window->window);
+void Window::post_loop() {
+    glfwSwapBuffers(this->window);
 }
 
-void window_set_user_pointer(Window *window, void *pointer) {
-    window->user_pointer = pointer;
+void Window::set_user_pointer(void *pointer) {
+    this->user_pointer = pointer;
 }
 
-void *window_get_user_pointer(Window *window) {
-    return window->user_pointer;
+void *Window::get_user_pointer() {
+    return this->user_pointer;
 }
 
-float window_get_resolution(Window *window) {
-    return (float)window->size[0] / (float)window->size[1];
+float Window::get_resolution() {
+    return (float)this->size[0] / (float)this->size[1];
 }
 
-double window_get_delta_time(Window *window) {
-    return window->delta_time;
+double Window::get_delta_time() {
+    return this->delta_time;
 }
 
-const char * window_get_clipboard(Window *window) {
-     return glfwGetClipboardString(window->window);
+const char * Window::get_clipboard() {
+     return glfwGetClipboardString(this->window);
 }
 
-void window_set_clipboard(Window *window, const char * str) {
-    glfwSetClipboardString(window->window, str);
+void Window::set_clipboard(const char * str) {
+    glfwSetClipboardString(this->window, str);
 }
 
-bool window_is_mouse_caputed(Window *window) {
-    return window->mouse_capute;
+bool Window::is_mouse_caputed() {
+    return this->mouse_capute;
 }
 
-void window_grab_mouse(Window *window, bool grab) {
-    window->mouse_capute = grab;
-    glfwSetInputMode(window->window, GLFW_CURSOR,
+void Window::grab_mouse(bool grab) {
+    this->mouse_capute = grab;
+    glfwSetInputMode(this->window, GLFW_CURSOR,
                      grab ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
 }
 
-bool window_is_key_pressed(Window *window, enum KEYS key) {
-    return glfwGetKey(window->window, key_glfw_map[key]) == GLFW_PRESS;
+bool Window::is_key_pressed(enum KEYS key) {
+    return glfwGetKey(this->window, key_glfw_map[key]) == GLFW_PRESS;
 }
 
-bool window_is_mouse_pressed(Window *window, enum BUTTONS key) {
+bool Window::is_mouse_pressed(enum BUTTONS key) {
     return glfwGetMouseButton(
-                window->window, btn_glfw_map[key]) == GLFW_PRESS;
+                this->window, btn_glfw_map[key]) == GLFW_PRESS;
 }
 
-void window_get_cursor(Window *window, vec2 dest) {
-    glm_vec2_copy(window->cursor, dest);
+void Window::get_cursor(vec2 dest) {
+    glm_vec2_copy(this->cursor, dest);
 }
 
-void window_set_cursor(Window *window, vec2 coords) {
-    glfwSetCursorPos(window->window, (double)coords[0], (double)coords[1]);
-    glm_vec2_copy(coords, window->cursor);
+void Window::set_cursor(vec2 coords) {
+    glfwSetCursorPos(this->window, (double)coords[0], (double)coords[1]);
+    glm_vec2_copy(coords, this->cursor);
 }
 
-int *window_get_size(Window *window) {
-    return window->size;
+int *Window::get_size() {
+    return this->size;
 }
 
-int *window_get_display(Window *window) {
-    return window->display;
+int *Window::get_display() {
+    return this->display;
 }
 
-float *window_get_scale(Window *window) {
-    return window->scale;
+float *Window::get_scale() {
+    return this->scale;
 }
 
-void window_set_scroll_cb(Window *window, scroll_cb_t callback) {
-    window->scroll_cb = callback;
+void Window::set_scroll_cb(scroll_cb_t callback) {
+    this->_scroll_cb = callback;
 }
 
-void window_set_mouse_motion_cb(
-        Window *window, mouse_motion_cb_t callback) {
-    window->mouse_motion_cb = callback;
+void Window::set_mouse_motion_cb(mouse_motion_cb_t callback) {
+    this->_mouse_motion_cb = callback;
 }
 
-void window_set_char_cb(Window *window, char_cb_t callback) {
-    window->char_cb = callback;
+void Window::set_char_cb(char_cb_t callback) {
+    this->_char_cb = callback;
 }
-void window_set_mouse_button_cb(
-        Window *window, mouse_button_cb_t callback) {
-    window->mouse_button_cb = callback;
-}
-
-void window_set_key_cb(Window *window, key_cb_t callback) {
-    window->key_cb = callback;
+void Window::set_mouse_button_cb(mouse_button_cb_t callback) {
+    this->_mouse_button_cb = callback;
 }
 
-void window_resize_cb(
+void Window::set_key_cb(key_cb_t callback) {
+    this->_key_cb = callback;
+}
+
+void Window::resize_cb(
         struct GLFWwindow* window, GLint width, GLint height) {
-    Window *win = glfwGetWindowUserPointer(window);
+    Window *win = static_cast<Window*>(glfwGetWindowUserPointer(window));
     glfwMakeContextCurrent(window);
     glViewport(0, 0, width, height);
     win->size[0] = width; win->size[1] = height;
 }
 
-void window_scroll_cb(
+void Window::scroll_cb(
         struct GLFWwindow* window, GLdouble xoffset, GLdouble yoffset) {
     ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
-    Window *win = glfwGetWindowUserPointer(window);
-    win->scroll_cb(win, xoffset, yoffset);
+    Window *win = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    if (win->_scroll_cb != nullptr)
+        win->_scroll_cb(win, xoffset, yoffset);
 }
 
-void window_mouse_motion_cb(
+void Window::mouse_motion_cb(
         struct GLFWwindow* window, double xpos, double ypos) {
-    Window *win = glfwGetWindowUserPointer(window);
+    Window *win = static_cast<Window*>(glfwGetWindowUserPointer(window));
     vec2 pos = {(float)xpos, (float)ypos}, offset;
     glm_vec2_sub(pos, win->cursor, offset);
     glm_vec2_copy(pos, win->cursor);
-    win->mouse_motion_cb(win, pos, offset);
+    if (win->_mouse_motion_cb)
+        win->_mouse_motion_cb(win, pos, offset);
 }
 
-void window_char_cb(GLFWwindow* window, unsigned int codepoint) {
+void Window::char_cb(GLFWwindow* window, unsigned int codepoint) {
     ImGui_ImplGlfw_CharCallback(window, codepoint);
-    Window *win = glfwGetWindowUserPointer(window);
-    win->char_cb(win, codepoint);
+    Window *win = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    if (win->_char_cb)
+        win->_char_cb(win, codepoint);
 }
 
-void window_mouse_button_cb(
+void Window::mouse_button_cb(
         GLFWwindow *window, int button, int action, UNUSED int mods) {
     ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
-    Window *win = glfwGetWindowUserPointer(window);
+    Window *win = static_cast<Window*>(glfwGetWindowUserPointer(window));
     enum BUTTONS btn = glfw_btn_map[button];
     bool pressed = action == GLFW_PRESS;
     if (button == GLFW_MOUSE_BUTTON_LEFT && pressed) {
@@ -307,16 +308,16 @@ void window_mouse_button_cb(
         win->last_click_time = glfwGetTime();
     }
     if (pressed || action == GLFW_RELEASE)
-        win->mouse_button_cb(win, btn, pressed);
+        win->_mouse_button_cb(win, btn, pressed);
 }
 
-void window_key_cb(GLFWwindow* window, int key, UNUSED int scancode,
+void Window::key_cb(GLFWwindow* window, int key, UNUSED int scancode,
                    int action, UNUSED int mods) {
     ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-    Window *win = glfwGetWindowUserPointer(window);
+    Window *win = static_cast<Window*>(glfwGetWindowUserPointer(window));
     bool pressed = action == GLFW_PRESS;
     if (pressed || action == GLFW_RELEASE)
-        win->key_cb(win, glfw_key_map[key], pressed);
+        win->_key_cb(win, glfw_key_map[key], pressed);
 }

@@ -8,10 +8,22 @@
 #include "mesh.h"
 #include "scene.h"
 #include "camera.h"
-//#include "nkglfw.h"
 #include "model.h"
 #include "window.h"
 #include "deimgui.h"
+
+/*#include "EASTL/hash_map.h"
+#include "EASTL/string.h"
+using eastl::hash_map;
+using eastl::string;*/
+
+#include <unordered_map>
+#include <string>
+#include <memory>
+using std::unordered_map;
+using std::string;
+using std::shared_ptr;
+using std::make_shared;
 
 enum TRANSFORMATIONS {
     ROTATE    = 0,
@@ -19,11 +31,11 @@ enum TRANSFORMATIONS {
     ANIMATE   = 2,
 };
 
-typedef struct App {
-    Model *models;
-    Shader *shaders;
+class App {
+    unordered_map<string, shared_ptr<Model>> models;
+    unordered_map<string, shared_ptr<Shader>> shaders;
     Scene scene;
-    UT_array *objects;
+    vector<Object> objects;
     Camera camera;
     //NkGlfw nkglfw;
     DeImgui deimgui;
@@ -34,25 +46,25 @@ typedef struct App {
     // buffered data for loop
     mat4 mat4buf, projection, last_camera;
     vec4 vec4buf;
-} App;
+public:
+    int init();
 
-int app_init(App *app);
+    void del();
 
-void app_del(App *app);
+    int loop();
 
-int app_loop(App *app);
+    bool load_shader(const char *name);
 
-bool app_load_shader(App *app, const char *name);
+    static void scroll(Window* window, GLdouble xoffset, GLdouble yoffset);
+    static void mouse(Window* window, vec2 pos, vec2 offset);
+    static void char_callback(Window* window, unsigned int codepoint);
+    static void mouse_button_callback(
+            Window *window, enum BUTTONS button, bool pressed);
+    static void key(Window* window, enum KEYS key, bool pressed);
 
-void app_scroll(Window* window, GLdouble xoffset, GLdouble yoffset);
-void app_mouse(Window* window, vec2 pos, vec2 offset);
-void app_char_callback(Window* window, unsigned int codepoint);
-void app_mouse_button_callback(
-        Window *window, enum BUTTONS button, bool pressed);
-void app_key(Window* window, enum KEYS key, bool pressed);
-
-// process all input
-// -----------------
-void app_process_input(App *app);
+    // process all input
+    // -----------------
+    void process_input();
+};
 
 #endif // APP_H

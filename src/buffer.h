@@ -3,17 +3,14 @@
 
 #include "osdo.h"
 
-typedef struct Buffer {
+class Buffer {
     GLuint fbo, texture, depthrenderbuffer;
-} Buffer;
+public:
+    Buffer();
+    ~Buffer();
 
-bool buffer_init(Buffer *this);
-Buffer *buffer_create(void);
-
-bool buffer_bind(Buffer *this, int size[2]);
-void buffer_unbind(Buffer *this);
-
-void buffer_del(Buffer *this);
-void buffer_free(Buffer *this);
+    bool bind(int size[2]);
+    void unbind();
+};
 
 #endif // BUFFER_H

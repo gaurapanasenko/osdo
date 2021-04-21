@@ -2,41 +2,41 @@
 #define SHADER_H
 
 #include "osdo.h"
+#include <memory>
+using std::shared_ptr;
+using std::make_shared;
 
-typedef struct Shader {
-    char name[64];
-    GLuint shader;
-    UT_hash_handle hh;
-} Shader;
+class Shader {
+    const GLuint shader;
+public:
+    Shader(const GLuint shader);
+    ~Shader();
 
-bool shader_compile(const char* vertexCode, const char* fragmentCode,
-                    Shader *shader);
+    Shader(const Shader&) = delete;
+    Shader(Shader&&) = delete;
 
-// constructor generates the shader on the fly
-bool shader_init(Shader *shader, const char* name);
-Shader *shader_create(const char* name);
+    Shader& operator=(const Shader&) = delete;
+    Shader& operator=(Shader&&) = delete;
 
-void shader_del(Shader *shader);
-void shader_free(Shader *shader);
+    static shared_ptr<Shader> create(const char* name);
 
-// activate the shader
-void shader_use(Shader *shader);
+    void use();
 
-// utility uniform functions
-void shader_set_bool (Shader *shader, const char* name, bool value);
-void shader_set_int  (Shader *shader, const char* name, int value);
-void shader_set_float(Shader *shader, const char* name, float value);
-void shader_set_vec2 (Shader *shader, const char* name, vec2 value);
-void shader_set_vec2f(Shader *shader, const char* name,
-                      float x, float y);
-void shader_set_vec3 (Shader *shader, const char* name, vec3 value);
-void shader_set_vec3f(Shader *shader, const char* name,
-                      float x, float y, float z);
-void shader_set_vec4 (Shader *shader, const char* name, vec4 value);
-void shader_set_vec4f(Shader *shader, const char* name,
-                      float x, float y, float z, float w);
-void shader_set_mat2 (Shader *shader, const char* name, mat2 mat);
-void shader_set_mat3 (Shader *shader, const char* name, mat3 mat);
-void shader_set_mat4 (Shader *shader, const char* name, mat4 mat);
+    void set_bool (const char* name, bool value);
+    void set_int  (const char* name, int value);
+    void set_float(const char* name, float value);
+    void set_vec2 (const char* name, vec2 value);
+    void set_vec2f(const char* name,
+                          float x, float y);
+    void set_vec3 (const char* name, vec3 value);
+    void set_vec3f(const char* name,
+                          float x, float y, float z);
+    void set_vec4 (const char* name, vec4 value);
+    void set_vec4f(const char* name,
+                          float x, float y, float z, float w);
+    void set_mat2 (const char* name, mat2 mat);
+    void set_mat3 (const char* name, mat3 mat);
+    void set_mat4 (const char* name, mat4 mat);
+};
 
 #endif // SHADER_H

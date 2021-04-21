@@ -3,45 +3,41 @@
 
 #include "osdo.h"
 #include "model.h"
+#include "easyvector.h"
+template<class T>
+using EasyVector = DE::vector<T>;
 
-typedef enum VetrexType {
+enum VetrexType {
     VERTEX_SIMPLE = 0,
     VERTEX_BEZIER = 1,
-} VetrexType;
+};
 
-typedef struct Vertex {
+struct Vertex {
     VetrexType type;
     int node_id;
     vec3 position;
     vec3 normal;
     unsigned char color[4];
     vec2 uv;
-} Vertex;
+    /*Vertex(VetrexType type, int node_id, vec3 position,
+           vec3 normal, unsigned char color[4], vec2 uv)
+        : type(type), node_id(node_id)
+    {}*/
+};
 
-typedef struct Mesh {
-    GLsizei vertices_size, indices_size;
-    Vertex *vertices;
-    GLuint *indices;
+class Mesh : public Model {
+    EasyVector<Vertex> vertices;
+    EasyVector<GLuint> indices;
     GLuint vao, vbo, ebo;
-} Mesh;
+public:
+    Mesh();
+    ~Mesh() override;
+    void cube_update();
+    void update(EasyVector<Vertex> vertices, EasyVector<GLuint> indices);
+    void clear();
 
-void mesh_init(Mesh* mesh);
-void mesh_cube_update(Mesh* mesh);
-Mesh *mesh_create(void);
-
-void mesh_del(Mesh* mesh);
-void mesh_free(Mesh* mesh);
-
-void mesh_update(
-        Mesh* mesh, GLsizei vertices_size, GLsizei indices_size,
-        Vertex *vertices, GLuint *indices);
-void mesh_clear(Mesh* mesh);
-
-void mesh_draw(Mesh *mesh);
-void mesh_draw_mode(Mesh *mesh, GLenum mode);
-
-static const ModelType mesh_type = {
-    mesh_draw, NULL, mesh_free,
+    void draw() override;
+    void draw_mode(GLenum mode);
 };
 
 #endif
