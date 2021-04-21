@@ -12,18 +12,13 @@
 #include "window.h"
 #include "deimgui.h"
 
-/*#include "EASTL/hash_map.h"
+#include "EASTL/hash_map.h"
 #include "EASTL/string.h"
+#include "EASTL/shared_ptr.h"
 using eastl::hash_map;
-using eastl::string;*/
-
-#include <unordered_map>
-#include <string>
-#include <memory>
-using std::unordered_map;
-using std::string;
-using std::shared_ptr;
-using std::make_shared;
+using eastl::string;
+using eastl::shared_ptr;
+using eastl::make_shared;
 
 enum TRANSFORMATIONS {
     ROTATE    = 0,
@@ -32,12 +27,11 @@ enum TRANSFORMATIONS {
 };
 
 class App {
-    unordered_map<string, shared_ptr<Model>> models;
-    unordered_map<string, shared_ptr<Shader>> shaders;
+    hash_map<string, shared_ptr<Model>> models;
+    hash_map<string, shared_ptr<Shader>> shaders;
     Scene scene;
     vector<Object> objects;
     Camera camera;
-    //NkGlfw nkglfw;
     DeImgui deimgui;
     Window window;
     bool interactive_mode;
@@ -48,8 +42,6 @@ class App {
     vec4 vec4buf;
 public:
     int init();
-
-    void del();
 
     int loop();
 

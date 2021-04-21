@@ -75,8 +75,8 @@ void Mesh::clear() {
 
 
 void Mesh::cube_update() {
-    EasyVector<Vertex> V = sizeof(EXAMPLE_CUBE_VERTEX) / sizeof(Vertex);
-    EasyVector<GLuint> E = sizeof(EXAMPLE_CUBE_INDICIES) / sizeof(GLuint);
+    EasyVector<Vertex> V(sizeof(EXAMPLE_CUBE_VERTEX) / sizeof(Vertex));
+    EasyVector<GLuint> E(sizeof(EXAMPLE_CUBE_INDICIES) / sizeof(GLuint));
     memcpy(V.data(), EXAMPLE_CUBE_VERTEX, sizeof(EXAMPLE_CUBE_VERTEX));
     memcpy(E.data(), EXAMPLE_CUBE_INDICIES, sizeof(EXAMPLE_CUBE_INDICIES));
     update(V, E);

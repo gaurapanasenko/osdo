@@ -5,11 +5,8 @@
 
 #include "object.h"
 
-/*#include "EASTL/vector.h"
-using namespace eastl;*/
-
-#include "vector"
-using std::vector;
+#include "EASTL/vector.h"
+using eastl::vector;
 
 struct Scene {
     vector<Object> objects;

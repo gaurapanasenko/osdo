@@ -338,10 +338,10 @@ void Beziator::edit_panel(mat4 matr)
         this->generate();
 }
 
-const Beziator::points_vector &Beziator::get_points() {
+Beziator::points_vector &Beziator::get_points() {
     return points;
 }
 
-const Beziator::surfaces_vector &Beziator::get_surfaces() {
+Beziator::surfaces_vector &Beziator::get_surfaces() {
     return surfaces;
 }

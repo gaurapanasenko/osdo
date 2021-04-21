@@ -2,9 +2,9 @@
 #define SHADER_H
 
 #include "osdo.h"
-#include <memory>
-using std::shared_ptr;
-using std::make_shared;
+#include "EASTL/shared_ptr.h"
+using eastl::shared_ptr;
+using eastl::make_shared;
 
 class Shader {
     const GLuint shader;

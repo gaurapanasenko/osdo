@@ -11,15 +11,6 @@
 
 #define RES_DIR "../share/osdo"
 
-#define NK_INCLUDE_FIXED_TYPES
-#define NK_INCLUDE_STANDARD_IO
-#define NK_INCLUDE_STANDARD_VARARGS
-#define NK_INCLUDE_DEFAULT_ALLOCATOR
-#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
-#define NK_INCLUDE_FONT_BAKING
-#define NK_INCLUDE_DEFAULT_FONT
-//#define NK_KEYSTATE_BASED_INPUT
-
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
@@ -32,9 +23,6 @@
 
 #define BASIS1ROT (vec3{ 0.0f, 0.0f,  0.2f})
 #define BASIS2ROT (vec3{ 0.0f, 0.0f, -0.2f})
-
-#define WINDOWS_NUM 2
-#define MESHES_NUM 3
 
 static const unsigned int SCR_WIDTH = 1366;
 static const unsigned int SCR_HEIGHT = 700;

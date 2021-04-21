@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(osdo LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ###############################################################################
 ## configuration ##############################################################
@@ -36,10 +36,10 @@ add_executable(${PROJECT_NAME}
     deps/imgui/imgui_widgets.cpp
     deps/imgui/imgui_tables.cpp
     deps/imgui/backends/imgui_impl_glfw.cpp
-    deps/imgui/backends/imgui_impl_opengl3.cpp
-    deps/ImGui-Addons/FileBrowser/ImGuiFileBrowser.cpp)
+    deps/imgui/backends/imgui_impl_opengl3.cpp)
+#    deps/ImGui-Addons/FileBrowser/ImGuiFileBrowser.cpp)
 
-target_compile_options(${PROJECT_NAME} PUBLIC -Wall -std=c99 -pedantic)
+target_compile_options(${PROJECT_NAME} PUBLIC -Wall -fno-exceptions)
 
 # This allows to include files relative to the root of the src directory with a <> pair
 #target_include_directories(${PROJECT_NAME} PUBLIC src/main)
@@ -87,8 +87,7 @@ find_library(glfw3_LIBRARY glfw REQUIRED)
 list(APPEND DE_LIBRARIES ${glfw3_LIBRARY})
 
 # EASTL
-#add_subdirectory(deps/EASTL)
-#add_subdirectory(deps/EASTL/test/packages/EABase)
+add_subdirectory(deps/EASTL)
 set(EASTL_ROOT_DIR deps/EASTL)
 list(APPEND DE_INCLUDE_DIRS
     ${EASTL_ROOT_DIR}/include
@@ -98,9 +97,7 @@ list(APPEND DE_INCLUDE_DIRS
     ${EASTL_ROOT_DIR}/test/packages/EAStdC/include
     ${EASTL_ROOT_DIR}/test/packages/EATest/include
     ${EASTL_ROOT_DIR}/test/packages/EAThread/include)
-#set(EASTL_LIBRARY debug ${EASTL_ROOT_DIR}/build/Debug/EASTL.lib optimized ${EASTL_ROOT_DIR}/build/Release/EASTL.lib)
-#add_custom_target(NatVis SOURCES ${EASTL_ROOT_DIR}/doc/EASTL.natvis)
-list(APPEND DE_LIBRARIES ${EASTL_LIBRARY})
+list(APPEND DE_LIBRARIES EASTL)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${DE_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${DE_LIBRARIES})

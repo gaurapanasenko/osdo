@@ -18,4 +18,8 @@ enum coord_enum {X = 0, Y = 1, Z = 2};
 #define UNUSED
 #endif
 
+//#define EASTL_VARIABLE_TEMPLATES_ENABLED 1
+void* __cdecl operator new[](size_t size, const char* name, int flags, unsigned debugFlags, const char* file, int line);
+void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, const char* pName, int flags, unsigned debugFlags, const char* file, int line);
+
 #endif // OSDO_H

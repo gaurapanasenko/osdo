@@ -7,15 +7,20 @@
 #include "mesh.h"
 #include "model.h"
 #include "easyvector.h"
+
+#include "EASTL/vector.h"
+
 template<class T>
-using EasyVector = DE::vector<T>;
+using EasyVector = eastl::vector<T>;
 
 typedef vec4 *surface_t[4][4];
 typedef int surfacei_t[4][4];
 
 class Beziator : public Model {
+public:
     typedef EasyVector<vec4> points_vector;
     typedef EasyVector<surfacei_t> surfaces_vector;
+private:
     char name[64];
     char *path;
     points_vector points;
@@ -39,8 +44,8 @@ public:
 
     void edit_panel(mat4 matr);
 
-    const points_vector &get_points();
-    const surfaces_vector &get_surfaces();
+    points_vector &get_points();
+    surfaces_vector &get_surfaces();
 };
 
 #endif // BEZIATOR_H

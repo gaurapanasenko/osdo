@@ -5,8 +5,8 @@
 #include "beziator.h"
 #include <imgui.h>
 
-#include <algorithm>
-using std::max;
+#include <EASTL/algorithm.h>
+using eastl::max;
 
 int App::init() {
     this->interactive_mode = false;
@@ -301,7 +301,7 @@ int App::loop() {
                 glm_mat4_mul(this->last_camera, matr, matr);
                 glm_mat4_mul(this->projection, matr, matr);
                 float minz = 0, maxz = 0;
-                auto bpoints = beziator.get_points();
+                Beziator::points_vector& bpoints = beziator.get_points();
                 const size_t points_size = bpoints.size();
                 points = EasyVector<vec4>(points_size);
 
@@ -452,7 +452,7 @@ int App::loop() {
             glm_mat4_mul(mat4buf, matr, matr);
             glm_mat4_mul(this->projection, matr, matr);
             float minz = 0, maxz = 0;
-            auto bpoints = beziator.get_points();
+            Beziator::points_vector& bpoints = beziator.get_points();
             const size_t points_size = bpoints.size();
 
             for (size_t i = 0; i < points_size; i++) {

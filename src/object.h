@@ -6,8 +6,9 @@
 #include "bijective.h"
 #include "model.h"
 #include "shader.h"
-#include <memory>
-using std::shared_ptr;
+#include "EASTL/shared_ptr.h"
+using eastl::shared_ptr;
+using eastl::make_shared;
 
 class Object : public Bijective {
     mat4 transform;

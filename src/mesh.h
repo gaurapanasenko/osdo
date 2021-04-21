@@ -4,8 +4,11 @@
 #include "osdo.h"
 #include "model.h"
 #include "easyvector.h"
+
+#include "EASTL/vector.h"
+
 template<class T>
-using EasyVector = DE::vector<T>;
+using EasyVector = eastl::vector<T>;
 
 enum VetrexType {
     VERTEX_SIMPLE = 0,
