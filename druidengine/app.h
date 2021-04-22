@@ -32,8 +32,8 @@ class App {
     Scene scene;
     vector<Object> objects;
     Camera camera;
-    DeImgui deimgui;
     Window window;
+    DeImgui deimgui;
     bool interactive_mode;
     int trans[3][3];
 

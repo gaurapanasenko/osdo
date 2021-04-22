@@ -1,18 +1,10 @@
-#include "app.h"
+#include "osdo.h"
 
 void* __cdecl operator new[](size_t size, const char* name, int flags, unsigned debugFlags, const char* file, int line)
 {
-    return new uint8_t[size];
+    return malloc(size);
 }
 
 void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, const char* pName, int flags, unsigned debugFlags, const char* file, int line) {
-    return new uint8_t[size];
-}
-
-int main() {
-    int status;
-    App app;
-    status = app.init();
-    if (status) return status;
-    return app.loop();
+    return malloc(size);
 }

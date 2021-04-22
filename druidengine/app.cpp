@@ -2,8 +2,9 @@
 #include "app.h"
 #include "conf.h"
 #include "shader.h"
-#include "beziator.h"
+#include "beziatorpanel.h"
 #include <imgui.h>
+#include "buffer.h"
 
 #include <EASTL/algorithm.h>
 using eastl::max;
@@ -36,7 +37,7 @@ int App::init() {
     shared_ptr<Shader> shader = shader_iter->second;
 
     {
-        auto beziator = make_shared<Beziator>("car", shader);
+        auto beziator = make_shared<BeziatorPanel>("car", shader);
         bool success = beziator->init();
         if (!success)
             return -1;
@@ -51,7 +52,7 @@ int App::init() {
 
         auto cube_model = make_shared<Mesh>();
         cube_model->cube_update();
-        this->objects.push_back(Object(cube_model, shader));
+        //this->objects.push_back(Object(cube_model, shader));
     }
 
     this->scene = Scene(this->objects);
@@ -75,23 +76,7 @@ int App::loop() {
     bool light = false;
     EasyVector<vec4> points(0);
 
-    GLuint texture, texture2;
-    glGenTextures(1, &texture);
-    glGenTextures(1, &texture2);
-
-    GLuint fbo, fbo_ms, texture_ms, depth_rbo, color_rbo;
-    GLuint fbo2, fbo_ms2, texture_ms2, depth_rbo2, color_rbo2;
-    glEnable(GL_MULTISAMPLE);
-    glGenFramebuffers(1, &fbo);
-    glGenFramebuffers(1, &fbo_ms);
-    glGenTextures(1, &texture_ms);
-    glGenRenderbuffers(1, &depth_rbo);
-    glGenRenderbuffers(1, &color_rbo);
-    glGenFramebuffers(1, &fbo2);
-    glGenFramebuffers(1, &fbo_ms2);
-    glGenTextures(1, &texture_ms2);
-    glGenRenderbuffers(1, &depth_rbo2);
-    glGenRenderbuffers(1, &color_rbo2);
+    Buffer buf, buf2;
 
     // render loop
     // -----------
@@ -144,7 +129,7 @@ int App::loop() {
         ImGui::End();
 
         if (scene->active) {
-            Beziator &beziator = static_cast<Beziator&>(*this->models.begin()->second);
+            BeziatorPanel &beziator = static_cast<BeziatorPanel&>(*this->models.begin()->second);
             Object &obj = *scene->objects.begin();
 
             mat4 matr = GLM_MAT4_IDENTITY_INIT;
@@ -164,32 +149,17 @@ int App::loop() {
         size.x = max(vMax.x-vMin.x, 5.f); size.y = max(vMax.y-vMin.y, 5.f);
 
         {
-            glBindFramebuffer(GL_FRAMEBUFFER, fbo_ms);
-
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture_ms);
-            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, GL_TRUE);
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, texture_ms, 0);
-
-            /*glBindRenderbuffer(GL_RENDERBUFFER, color_rbo);
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, (GLsizei)size.x, (GLsizei)size.y);
-            glBindRenderbuffer(GL_RENDERBUFFER, 0);
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, color_rbo);*/
-
-            glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo);
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, (GLsizei)size.x, (GLsizei)size.y);
-            glBindRenderbuffer(GL_RENDERBUFFER, 0);
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth_rbo);
-
-            if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
-                glEnable(GL_DEPTH_TEST);
-                glViewport(0, 0, (GLsizei)size.x, (GLsizei)size.y);
+            GLsizei glsize[] = {
+                static_cast<GLsizei>(size.x),
+                static_cast<GLsizei>(size.y),
+            };
+            if (buf.pre_render(glsize)) {
                 glClearColor(1, 1, 1, 1);
                 glClearDepth(1.0);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glActiveTexture(GL_TEXTURE0);
 
-                sh.use();
+                sh.bind();
 
                 // pass projection matrix to shader
                 glm_perspective(45.f * (GLfloat) M_RAD, size.x / size.y,
@@ -250,33 +220,13 @@ int App::loop() {
             } else {
                 printf("Error\n");
             }
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-            glBindTexture(GL_TEXTURE_2D, texture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0);
-            glBindTexture(GL_TEXTURE_2D, 0);
-
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_ms);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-            if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-                printf("error\n");
-            glDrawBuffer(GL_BACK);
-            glBlitFramebuffer(0, 0, size.x, size.y, 0, 0, size.x, size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            buf.post_render(glsize);
         }
 
 
         {
             ImVec2 cursorBegin = ImGui::GetCursorPos();
-            ImGui::Image(((void*)(intptr_t)texture), size,
+            ImGui::Image(buf.get_tex().get_vid(), size,
                          ImVec2{0, 0}, ImVec2{1, 1}, ImVec4{1,1,1,1}, ImVec4{0,0,0,0});
 
             ImGui::SetCursorPos(cursorBegin);
@@ -293,7 +243,7 @@ int App::loop() {
             }
             ImDrawList *dl = ImGui::GetWindowDrawList();
             if (this->scene.active) {
-                Beziator &beziator = static_cast<Beziator&>(*this->models.begin()->second);
+                BeziatorPanel &beziator = static_cast<BeziatorPanel&>(*this->models.begin()->second);
                 Object &obj = *scene->objects.begin();
                 obj.get_mat4(this->mat4buf);
                 mat4 matr = GLM_MAT4_IDENTITY_INIT;
@@ -340,7 +290,7 @@ int App::loop() {
         ImGui::End();
 
         if (scene->active) {
-            Beziator &beziator = static_cast<Beziator&>(*this->models.begin()->second);
+            BeziatorPanel &beziator = static_cast<BeziatorPanel&>(*this->models.begin()->second);
             Object &obj = *scene->objects.begin();
 
             ImGui::SetNextWindowSize(ImVec2{512, 512}, ImGuiCond_FirstUseEver);
@@ -353,27 +303,18 @@ int App::loop() {
             size.x = max(vMax.x-vMin.x, 5.f); size.y = max(vMax.y-vMin.y, 5.f);
 
             {
-                glBindFramebuffer(GL_FRAMEBUFFER, fbo_ms2);
+                GLsizei glsize[] = {
+                    static_cast<GLsizei>(size.x),
+                    static_cast<GLsizei>(size.y),
+                };
 
-                glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture_ms2);
-                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, GL_TRUE);
-                glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, texture_ms2, 0);
-
-                glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo2);
-                glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, (GLsizei)size.x, (GLsizei)size.y);
-                glBindRenderbuffer(GL_RENDERBUFFER, 0);
-                glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth_rbo2);
-
-                if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
-                    glEnable(GL_DEPTH_TEST);
-                    glViewport(0, 0, (GLsizei)size.x, (GLsizei)size.y);
+                if (buf2.pre_render(glsize)) {
                     glClearColor(1, 1, 1, 1);
                     glClearDepth(1.0);
                     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                     glActiveTexture(GL_TEXTURE0);
 
-                    sh.use();
+                    sh.bind();
 
                     glm_perspective(45.f * (GLfloat) M_RAD, size.x / size.y,
                                     0.01f, 100.0f, this->projection);
@@ -404,31 +345,11 @@ int App::loop() {
                 } else {
                     printf("Error\n");
                 }
-                glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-                glBindFramebuffer(GL_FRAMEBUFFER, fbo2);
-
-                glBindTexture(GL_TEXTURE_2D, texture2);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture2, 0);
-                glBindTexture(GL_TEXTURE_2D, 0);
-
-                glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_ms2);
-                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
-                if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-                    printf("error\n");
-                glDrawBuffer(GL_BACK);
-                glBlitFramebuffer(0, 0, size.x, size.y, 0, 0, size.x, size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-                glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                buf2.post_render(glsize);
             }
 
             ImVec2 cursorBegin = ImGui::GetCursorPos();
-            ImGui::Image(((void*)(intptr_t)texture2), size,
+            ImGui::Image(buf2.get_tex().get_vid(), size,
                          ImVec2{0, 0}, ImVec2{1, 1}, ImVec4{1,1,1,1}, ImVec4{0,0,0,0});
 
             ImGui::SetCursorPos(cursorBegin);
@@ -490,18 +411,6 @@ int App::loop() {
         this->deimgui.render();
         this->window.post_loop();
     }
-    glDeleteRenderbuffers(1, &color_rbo);
-    glDeleteRenderbuffers(1, &depth_rbo);
-    glDeleteTextures(1, &texture_ms);
-    glDeleteFramebuffers(1, &fbo_ms);
-    glDeleteFramebuffers(1, &fbo);
-    glDeleteTextures(1, &texture);
-    glDeleteRenderbuffers(1, &color_rbo2);
-    glDeleteRenderbuffers(1, &depth_rbo2);
-    glDeleteTextures(1, &texture_ms2);
-    glDeleteFramebuffers(1, &fbo_ms2);
-    glDeleteFramebuffers(1, &fbo2);
-    glDeleteTextures(1, &texture2);
     return 0;
 }
 

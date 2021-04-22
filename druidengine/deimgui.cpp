@@ -5,8 +5,11 @@
 #include "deimgui.h"
 #include "window.h"
 #include "conf.h"
+#include "ImFileDialog.h"
 
 void DeImgui::init(Window *win) {
+    this->win = win;
+    this->show_demo_window = false;
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -71,6 +74,26 @@ void DeImgui::init(Window *win) {
     static const char* glsl_version = "#version 330 core";
     ImGui_ImplGlfw_InitForOpenGL(win->get(), false);
     ImGui_ImplOpenGL3_Init(glsl_version);
+
+    ifd::FileDialog::Instance().CreateTexture = [](uint8_t* data, int w, int h, char fmt) -> void* {
+        GLuint tex;
+
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, (fmt == 0) ? GL_BGRA : GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        return (void*)tex;
+    };
+    ifd::FileDialog::Instance().DeleteTexture = [](void* tex) {
+        GLuint texID = (GLuint)(size_t)(tex);
+        glDeleteTextures(1, &texID);
+    };
 }
 
 DeImgui::~DeImgui() {
@@ -90,5 +113,52 @@ void DeImgui::update() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    //igShowDemoWindow(NULL);
+    if (show_demo_window)
+        ImGui::ShowDemoWindow(&show_demo_window);
+
+    int *size = win->get_size();
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(size[0], size[1]), ImGuiCond_Always);
+    ImGuiWindowFlags window_flags = 0
+        | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking
+        | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse
+        | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
+        | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::Begin("Main Window", nullptr, window_flags);
+    ImGuiID dockMain = ImGui::GetID("MyDockspace");
+
+    ImGui::DockSpace(dockMain);
+    ImGui::End();
+    ImGui::PopStyleVar(3);
+
+    bool open = false;
+    if(ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("Menu"))
+        {
+            if (ImGui::MenuItem("Open", nullptr))
+                open = true;
+            if (ImGui::MenuItem("Demo", nullptr))
+                show_demo_window = true;
+
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+
+    if(open)
+        ifd::FileDialog::Instance().Open(
+                    "ModelOpenDialog", "Open a model",
+                    "Model file (*.odom){.odom},.*");
+
+    if (ifd::FileDialog::Instance().IsDone("ModelOpenDialog")) {
+        if (ifd::FileDialog::Instance().HasResult()) {
+            std::string res = ifd::FileDialog::Instance().GetResult().u8string();
+            printf("OPEN[%s]\n", res.c_str());
+        }
+        ifd::FileDialog::Instance().Close();
+    }
 }

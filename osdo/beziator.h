@@ -20,7 +20,7 @@ class Beziator : public Model {
 public:
     typedef EasyVector<vec4> points_vector;
     typedef EasyVector<surfacei_t> surfaces_vector;
-private:
+protected:
     char name[64];
     char *path;
     points_vector points;
@@ -41,8 +41,6 @@ public:
     bool save();
 
     void rotate(size_t i);
-
-    void edit_panel(mat4 matr);
 
     points_vector &get_points();
     surfaces_vector &get_surfaces();

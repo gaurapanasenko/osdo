@@ -96,10 +96,15 @@ bool compile(const char* vertexCode, const char* fragmentCode, GLuint *shader) {
     return true;
 }
 
-Shader::Shader(const GLuint shader) : shader(shader) {}
+void Shader::_bind(const GLuint id, UNUSED GLenum target) const
+{
+    glUseProgram(id);
+}
+
+Shader::Shader(const GLuint shader) : GlBindable(shader) {}
 
 Shader::~Shader() {
-    glDeleteProgram(this->shader);
+    glDeleteProgram(this->get_id());
 }
 
 shared_ptr<Shader> Shader::create(const char* name) {
@@ -141,63 +146,59 @@ shared_ptr<Shader> Shader::create(const char* name) {
     return make_shared<Shader>(shader);
 }
 
-void Shader::use() {
-    glUseProgram(this->shader);
-}
-
 void Shader::set_bool(const char* name, bool value) {
-    glUniform1i(glGetUniformLocation(this->shader, name), static_cast<int>(value));
+    glUniform1i(glGetUniformLocation(this->get_id(), name), static_cast<int>(value));
 }
 
 void Shader::set_int(const char* name, int value) {
-    glUniform1i(glGetUniformLocation(this->shader, name), value);
+    glUniform1i(glGetUniformLocation(this->get_id(), name), value);
 }
 
 void Shader::set_float(const char* name, float value) {
-    glUniform1f(glGetUniformLocation(this->shader, name), value);
+    glUniform1f(glGetUniformLocation(this->get_id(), name), value);
 }
 
 void Shader::set_vec2(const char* name, vec2 value) {
-    glUniform2fv(glGetUniformLocation(this->shader, name),
+    glUniform2fv(glGetUniformLocation(this->get_id(), name),
                  1, &value[0]);
 }
 
 void Shader::set_vec2f(const char* name,
                       float x, float y) {
-    glUniform2f(glGetUniformLocation(this->shader, name), x, y);
+    glUniform2f(glGetUniformLocation(this->get_id(), name), x, y);
 }
 
 void Shader::set_vec3(const char* name, vec3 value) {
-    glUniform3fv(glGetUniformLocation(this->shader, name),
+    glUniform3fv(glGetUniformLocation(this->get_id(), name),
                  1, &value[0]);
 }
 
 void Shader::set_vec3f(const char* name,
                       float x, float y, float z) {
-    glUniform3f(glGetUniformLocation(this->shader, name), x, y, z);
+    glUniform3f(glGetUniformLocation(this->get_id(), name), x, y, z);
 }
 
 void Shader::set_vec4(const char* name, vec4 value) {
-    glUniform4fv(glGetUniformLocation(this->shader, name),
+    glUniform4fv(glGetUniformLocation(this->get_id(), name),
                  1, &value[0]);
 }
 
 void Shader::set_vec4f(const char* name,
                       float x, float y, float z, float w) {
-    glUniform4f(glGetUniformLocation(this->shader, name), x, y, z, w);
+    glUniform4f(glGetUniformLocation(this->get_id(), name), x, y, z, w);
 }
 
 void Shader::set_mat2(const char* name, mat2 mat) {
-    glUniformMatrix2fv(glGetUniformLocation(this->shader, name),
+    glUniformMatrix2fv(glGetUniformLocation(this->get_id(), name),
                        1, GL_FALSE, &mat[0][0]);
 }
 
 void Shader::set_mat3(const char* name, mat3 mat) {
-    glUniformMatrix3fv(glGetUniformLocation(this->shader, name),
+    glUniformMatrix3fv(glGetUniformLocation(this->get_id(), name),
                        1, GL_FALSE, &mat[0][0]);
 }
 
 void Shader::set_mat4(const char* name, mat4 mat) {
-    glUniformMatrix4fv(glGetUniformLocation(this->shader, name),
+    glUniformMatrix4fv(glGetUniformLocation(this->get_id(), name),
                        1, GL_FALSE, &mat[0][0]);
 }

@@ -66,6 +66,13 @@ class Window {
 public:
     ~Window();
 
+    Window() = default;
+    Window(const Window&) = delete;
+    Window(Window&&) = delete;
+
+    Window& operator=(const Window&) = delete;
+    Window& operator=(Window&&) = delete;
+
     int init();
 
     struct GLFWwindow* get();

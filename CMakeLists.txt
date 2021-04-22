@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
 project(osdo LANGUAGES CXX)
-#set(CMAKE_CXX_STANDARD 11)
-#set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ###############################################################################
 ## configuration ##############################################################
@@ -18,18 +16,67 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # These instructions search the directory tree when cmake is
 # invoked and put all files that match the pattern in the variables
 # `SOURCE_FILES` and `RESOURCE_FILES`.
-file(GLOB SOURCE_FILES src/*.cpp src/*.h)
+file(GLOB OSDO_SOURCE_FILES osdo/*.cpp osdo/*.h)
+file(GLOB DE_SOURCE_FILES druidengine/*.cpp druidengine/*.h)
 file(GLOB RESOURCE_FILES res/*)
 
 ###############################################################################
-## target definitions #########################################################
+## dependencies ###############################################################
 ###############################################################################
 
-# The data is just added to the executable, because in some IDEs (QtCreator)
-# files are invisible when they are not explicitly part of the project.
-add_executable(${PROJECT_NAME}
-    ${SOURCE_FILES}
-    ${RESOURCE_FILES}
+set(OSDO_LIBRARIES )
+set(OSDO_INCLUDE_DIRS osdo)
+set(OSDO_SOURCES ${OSDO_SOURCE_FILES})
+
+set(DE_LIBRARIES )
+set(DE_INCLUDE_DIRS )
+set(DE_SOURCES ${DE_SOURCE_FILES} ${RESOURCE_FILES})
+
+# Math
+find_library(M_LIBRARIES m REQUIRED)
+list(APPEND OSDO_LIBRARIES ${M_LIBRARIES})
+
+# OpenGL
+find_package(OpenGL REQUIRED)
+list(APPEND OSDO_INCLUDE_DIRS ${OPENGL_INCLUDE_DIR})
+list(APPEND OSDO_LIBRARIES ${OPENGL_LIBRARIES})
+
+# GLEW
+find_package(GLEW REQUIRED)
+list(APPEND OSDO_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS})
+list(APPEND OSDO_LIBRARIES ${GLEW_LIBRARIES})
+
+# CGLM
+find_package(cglm REQUIRED)
+list(APPEND OSDO_LIBRARIES ${CGLM_LIBRARY})
+
+# GLFW
+find_package(glfw3 REQUIRED)
+find_library(glfw3_LIBRARY glfw REQUIRED)
+list(APPEND DE_LIBRARIES ${glfw3_LIBRARY})
+
+# EASTL
+add_subdirectory(deps/EASTL)
+set(EASTL_ROOT_DIR deps/EASTL)
+list(APPEND OSDO_INCLUDE_DIRS
+    ${EASTL_ROOT_DIR}/include
+    ${EASTL_ROOT_DIR}/test/packages/EAAssert/include
+    ${EASTL_ROOT_DIR}/test/packages/EABase/include/Common
+    ${EASTL_ROOT_DIR}/test/packages/EAMain/include
+    ${EASTL_ROOT_DIR}/test/packages/EAStdC/include
+    ${EASTL_ROOT_DIR}/test/packages/EATest/include
+    ${EASTL_ROOT_DIR}/test/packages/EAThread/include)
+list(APPEND OSDO_LIBRARIES EASTL)
+
+# stb
+list(APPEND DE_INCLUDE_DIRS deps/stb)
+
+# ImGui
+list(APPEND DE_INCLUDE_DIRS
+    deps
+    deps/imgui
+    deps/imgui/backends)
+list(APPEND DE_SOURCES
     deps/imgui/imgui.cpp
     deps/imgui/imgui_draw.cpp
     deps/imgui/imgui_demo.cpp
@@ -37,9 +84,35 @@ add_executable(${PROJECT_NAME}
     deps/imgui/imgui_tables.cpp
     deps/imgui/backends/imgui_impl_glfw.cpp
     deps/imgui/backends/imgui_impl_opengl3.cpp)
-#    deps/ImGui-Addons/FileBrowser/ImGuiFileBrowser.cpp)
 
-target_compile_options(${PROJECT_NAME} PUBLIC -Wall -fno-exceptions)
+# ImFileDialog
+list(APPEND DE_INCLUDE_DIRS
+    deps/ImFileDialog)
+list(APPEND DE_SOURCES
+    deps/ImFileDialog/ImFileDialog.cpp)
+
+# Threads
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+list(APPEND DE_LIBRARIES Threads::Threads)
+
+list(APPEND DE_INCLUDE_DIRS ${OSDO_INCLUDE_DIRS})
+list(APPEND DE_LIBRARIES ${OSDO_LIBRARIES})
+
+###############################################################################
+## target definitions #########################################################
+###############################################################################
+
+add_library(osdo STATIC ${OSDO_SOURCES})
+target_include_directories(osdo PRIVATE ${OSDO_INCLUDE_DIRS})
+target_link_libraries(osdo PRIVATE ${OSDO_LIBRARIES})
+target_compile_options(osdo PRIVATE -Wall -fno-exceptions)
+
+add_executable(druidengine ${DE_SOURCES})
+set_target_properties(druidengine PROPERTIES CXX_STANDARD 17)
+target_include_directories(druidengine PRIVATE ${DE_INCLUDE_DIRS})
+target_link_libraries(druidengine PRIVATE ${DE_LIBRARIES} osdo)
+target_compile_options(druidengine PRIVATE -Wall)
 
 # This allows to include files relative to the root of the src directory with a <> pair
 #target_include_directories(${PROJECT_NAME} PUBLIC src/main)
@@ -52,55 +125,6 @@ add_custom_target(${PROJECT_NAME}_res ALL
 # Set resource files to target properties.
 #set_target_properties(${PROJECT_NAME} PROPERTIES
 #  RESOURCE "${RESOURCE_FILES}")
-
-###############################################################################
-## dependencies ###############################################################
-###############################################################################
-
-set(DE_LIBRARIES m)
-set(DE_INCLUDE_DIRS
-    deps/imgui
-    deps/imgui/backends
-    deps/ImGui-Addons/FileBrowser)
-
-# Math
-find_library(M_LIBRARIES m REQUIRED)
-list(APPEND DE_LIBRARIES ${M_LIBRARIES})
-
-# OpenGL
-find_package(OpenGL REQUIRED)
-list(APPEND DE_INCLUDE_DIRS ${OPENGL_INCLUDE_DIR})
-list(APPEND DE_LIBRARIES ${OPENGL_LIBRARIES})
-
-# GLEW
-find_package(GLEW REQUIRED)
-list(APPEND DE_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS})
-list(APPEND DE_LIBRARIES ${GLEW_LIBRARIES})
-
-# CGLM
-find_package(cglm REQUIRED)
-list(APPEND DE_LIBRARIES ${CGLM_LIBRARY})
-
-# GLFW
-find_package(glfw3 REQUIRED)
-find_library(glfw3_LIBRARY glfw REQUIRED)
-list(APPEND DE_LIBRARIES ${glfw3_LIBRARY})
-
-# EASTL
-add_subdirectory(deps/EASTL)
-set(EASTL_ROOT_DIR deps/EASTL)
-list(APPEND DE_INCLUDE_DIRS
-    ${EASTL_ROOT_DIR}/include
-    ${EASTL_ROOT_DIR}/test/packages/EAAssert/include
-    ${EASTL_ROOT_DIR}/test/packages/EABase/include/Common
-    ${EASTL_ROOT_DIR}/test/packages/EAMain/include
-    ${EASTL_ROOT_DIR}/test/packages/EAStdC/include
-    ${EASTL_ROOT_DIR}/test/packages/EATest/include
-    ${EASTL_ROOT_DIR}/test/packages/EAThread/include)
-list(APPEND DE_LIBRARIES EASTL)
-
-target_include_directories(${PROJECT_NAME} PRIVATE ${DE_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${DE_LIBRARIES})
 
 ###############################################################################
 ## packaging ##################################################################
