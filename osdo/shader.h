@@ -13,7 +13,8 @@ public:
     Shader(const GLuint shader);
     ~Shader() override;
 
-    static shared_ptr<Shader> create(const char* name);
+    static shared_ptr<Shader> create(const char *vertex_path,
+                                     const char *fragment_path);
 
     void set_bool (const char* name, bool value);
     void set_int  (const char* name, int value);

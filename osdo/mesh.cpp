@@ -44,6 +44,10 @@ Mesh::~Mesh() {
     Mesh::clear();
 }
 
+vector<Vertex> &Mesh::get_vertices() {
+    return vertices;
+}
+
 void Mesh::update(EasyVector<Vertex> vertices, EasyVector<GLuint> indices) {
     Mesh::clear();
     this->vertices = vertices;
@@ -94,6 +98,6 @@ void Mesh::draw_mode(GLenum mode) {
     glBindVertexArray(0);
 }
 
-void Mesh::draw() {
+void Mesh::draw(Shader &) {
     Mesh::draw_mode(GL_TRIANGLES);
 }

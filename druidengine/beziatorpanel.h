@@ -6,7 +6,7 @@
 class BeziatorPanel : public Beziator
 {
 public:
-    BeziatorPanel(const char *name, shared_ptr<Shader> editmode);
+    BeziatorPanel(const char *name);
 
     void edit_panel(mat4 matr);
 };

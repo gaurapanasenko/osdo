@@ -4,9 +4,6 @@
 #include "shader.h"
 #include "conf.h"
 
-#define VERTEX_PATH RES_DIR"/%s.vs"
-#define FRAGMENT_PATH RES_DIR"/%s.fs"
-
 char * readFromFile(const char *path) {
     char* data;
     size_t size;
@@ -107,43 +104,21 @@ Shader::~Shader() {
     glDeleteProgram(this->get_id());
 }
 
-shared_ptr<Shader> Shader::create(const char* name) {
-    // 1. retrieve the vertex/fragment source code from filePath
-    const size_t path_len = strlen(VERTEX_PATH);
-    const size_t len = strlen(name);
-    char *vertex_path = static_cast<char*>(calloc(len + path_len, sizeof(char))),
-        *fragment_path = static_cast<char*>(calloc(len + path_len, sizeof(char)));
-    snprintf(vertex_path, len + path_len, VERTEX_PATH, name);
-    snprintf(fragment_path, len + path_len, FRAGMENT_PATH, name);
+shared_ptr<Shader> Shader::create(const char *vertex_path,
+                                  const char *fragment_path) {
+    shared_ptr<Shader> shader_ptr;
     GLchar* vertex = readFromFile(vertex_path);
-    if (vertex == nullptr) {
-        printf("ERROR: failed to read from vertex shader file %s.\n",
-               vertex_path);
-        free(vertex_path);
-        free(fragment_path);
-        return nullptr;
-    }
-
     GLchar* fragment = readFromFile(fragment_path);
-    if (fragment == nullptr) {
-        printf("ERROR: failed to read from fragment shader file %s.\n",
-               fragment_path);
-        free(vertex_path);
-        free(fragment_path);
-        free(vertex);
-        return nullptr;
+    GLuint shader = 0;
+
+    if (vertex != nullptr && fragment != nullptr &&
+            compile(vertex, fragment, &shader)) {
+        shader_ptr = make_shared<Shader>(shader);
     }
-
-    GLuint shader;
-    if (!compile(vertex, fragment, &shader))
-        return nullptr;
-
     free(vertex);
     free(fragment);
-    free(vertex_path);
-    free(fragment_path);
 
-    return make_shared<Shader>(shader);
+    return shader_ptr;
 }
 
 void Shader::set_bool(const char* name, bool value) {

@@ -13,28 +13,25 @@
 template<class T>
 using EasyVector = eastl::vector<T>;
 
-typedef vec4 *surface_t[4][4];
-typedef int surfacei_t[4][4];
+typedef size_t surfacei_t[4][4];
 
 class Beziator : public Model {
 public:
-    typedef EasyVector<vec4> points_vector;
     typedef EasyVector<surfacei_t> surfaces_vector;
 protected:
     char name[64];
     char *path;
-    points_vector points;
+    vector<Vertex> points;
     surfaces_vector surfaces;
     Mesh mesh, frame, normals;
-    shared_ptr<Shader> editmode;
     Model model;
 public:
-    Beziator(const char *name, shared_ptr<Shader> editmode);
+    Beziator(const char *name);
     ~Beziator() override;
 
     bool init();
 
-    void draw() override;
+    void draw(Shader &shader) override;
 
     void generate() override;
 
@@ -42,7 +39,7 @@ public:
 
     void rotate(size_t i);
 
-    points_vector &get_points();
+    vector<Vertex> &get_vertices() override;
     surfaces_vector &get_surfaces();
 };
 

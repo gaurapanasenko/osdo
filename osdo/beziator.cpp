@@ -12,8 +12,9 @@
 
 #define ucast static_cast<unsigned>
 
-Beziator::Beziator(
-        const char *name, shared_ptr<Shader> editmode) : editmode(editmode) {
+typedef Vertex *surface_t[4][4];
+
+Beziator::Beziator(const char *name) {
     strncpy(this->name, name, 64);
 }
 
@@ -32,13 +33,13 @@ bool Beziator::init() {
 
     size_t points_size, surfaces_size;
     fscanf(file, "%lu%lu", &points_size, &surfaces_size);
-    this->points = EasyVector<vec4>(points_size);
+    this->points = vector<Vertex>(points_size);
     this->surfaces = EasyVector<surfacei_t>(surfaces_size);
     points_size = this->points.size();
     surfaces_size = this->surfaces.size();
     for (size_t i = 0; i < points_size; i++) {
         vec4 init = GLM_VEC4_BLACK_INIT;
-        vec4 &point = this->points[i];
+        vec4 &point = this->points[i].position;
         glm_vec4_copy(init, point);
         fscanf(file, "%f%f%f", point, point + 1, point + 2);
     }
@@ -46,7 +47,7 @@ bool Beziator::init() {
     for (size_t i = 0; i < surfaces_size; i++) {
         for (j = 0; j < 4; j++)
             for (k = 0; k < 4; k++) {
-                fscanf(file, "%i", this->surfaces[i][j] + k);
+                fscanf(file, "%lu", this->surfaces[i][j] + k);
             }
     }
     fclose(file);
@@ -57,15 +58,15 @@ Beziator::~Beziator() {
     free(this->path);
 }
 
-void Beziator::draw() {
+void Beziator::draw(Shader &shader) {
     //shader_set_vec3(this->editmode, "min_coord", this->min_coord);
     //shader_set_vec3(this->editmode, "max_coord", this->max_coord);
     //mesh_draw_mode(&this->frame, GL_POINTS);
     //mesh_draw_mode(&this->frame, GL_LINES);
-    this->editmode->set_float("alpha", 0.5f);
+    shader.set_float("alpha", 0.5f);
     this->mesh.draw_mode(GL_TRIANGLES);
     //mesh_draw_mode(&this->normals, GL_LINES);
-    this->editmode->set_float("alpha", 1);
+    shader.set_float("alpha", 1);
 }
 
 
@@ -88,16 +89,16 @@ void bezier_surface(
     mat4 m, res1, res2, res3;
 
     for (int i = 0; i < 4; i++) {
-        glm_vec4_copy(*(points[0][i]), m[0]);
-        glm_vec4_copy(*(points[1][i]), m[1]);
-        glm_vec4_copy(*(points[2][i]), m[2]);
-        glm_vec4_copy(*(points[3][i]), m[3]);
+        glm_vec4_copy(points[0][i]->position, m[0]);
+        glm_vec4_copy(points[1][i]->position, m[1]);
+        glm_vec4_copy(points[2][i]->position, m[2]);
+        glm_vec4_copy(points[3][i]->position, m[3]);
         bezier_curve(u, m, res1[i]);
 
-        glm_vec4_copy(*(points[i][0]), m[0]);
-        glm_vec4_copy(*(points[i][1]), m[1]);
-        glm_vec4_copy(*(points[i][2]), m[2]);
-        glm_vec4_copy(*(points[i][3]), m[3]);
+        glm_vec4_copy(points[i][0]->position, m[0]);
+        glm_vec4_copy(points[i][1]->position, m[1]);
+        glm_vec4_copy(points[i][2]->position, m[2]);
+        glm_vec4_copy(points[i][3]->position, m[3]);
         bezier_curve(v, m, res2[i]);
     }
 
@@ -116,7 +117,7 @@ bool Beziator::save() {
     }
     fprintf(file, "%lu %lu\n", this->points.size(), this->surfaces.size());
     for (size_t i = 0; i < this->points.size(); i++) {
-        vec4 &point = this->points[i];
+        vec4 &point = this->points[i].position;
         fprintf(file, "%f %f %f\n", static_cast<double>(point[0]),
                 static_cast<double>(point[1]), static_cast<double>(point[2]));
     }
@@ -124,7 +125,7 @@ bool Beziator::save() {
     for (size_t i = 0; i < this->surfaces.size(); i++) {
         for (j = 0; j < 4; j++)
             for (k = 0; k < 4; k++) {
-                fprintf(file, "%i ", this->surfaces[i][j][k]);
+                fprintf(file, "%lu ", this->surfaces[i][j][k]);
             }
         fprintf(file, "\n");
     }
@@ -188,7 +189,7 @@ void Beziator::generate() {
 
     // Creator frame vertices
     for (size_t i = 0; i < this->points.size(); i++) {
-        point = &this->points[i];
+        point = &this->points[i].position;
         glm_vec3_copy(*point, V2[i].position);
         V2[i].color[1] = 255;
         V2[i].color[3] = 255;
@@ -245,10 +246,10 @@ void Beziator::generate() {
                         st += 3;
                     }
                     index = static_cast<size_t>((surface)[si+st[1][0]][sj+st[1][1]] - this->points.data());
-                    glm_vec3_sub(*((surface)[si+st[1][0]][sj+st[1][1]]),
-                            *((surface)[si+st[0][0]][sj+st[0][1]]), m4b[0]);
-                    glm_vec3_sub(*((surface)[si+st[1][0]][sj+st[1][1]]),
-                            *(surface[si+st[2][0]][sj+st[2][1]]), m4b[1]);
+                    glm_vec3_sub(((surface)[si+st[1][0]][sj+st[1][1]])->position,
+                            ((surface)[si+st[0][0]][sj+st[0][1]])->position, m4b[0]);
+                    glm_vec3_sub(((surface)[si+st[1][0]][sj+st[1][1]])->position,
+                            (surface[si+st[2][0]][sj+st[2][1]])->position, m4b[1]);
                     glm_vec3_cross(m4b[0], m4b[1], m4b[2]);
                     glm_vec3_add(V2[index].normal, m4b[2], V2[index].normal);
                     st++;
@@ -279,7 +280,7 @@ void Beziator::rotate(size_t i) {
         }
 }
 
-Beziator::points_vector &Beziator::get_points() {
+vector<Vertex> &Beziator::get_vertices() {
     return points;
 }
 

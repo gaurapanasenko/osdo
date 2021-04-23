@@ -7,14 +7,14 @@
 #include "framebuffer.h"
 
 class Buffer {
-    Texture ms_tex, tex;
+    Texture tex;
     Renderbuffer color_rb, depth_rb;
     Framebuffer ms_fb, fb;
 public:
     bool pre_render(GLsizei size[2]);
     void post_render(GLsizei size[2]);
 
-    const Texture& get_tex() {return tex;}
+    const Texture& get_tex();
 };
 
 #endif // BUFFER_H

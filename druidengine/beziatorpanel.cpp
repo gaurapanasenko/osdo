@@ -1,8 +1,8 @@
 #include "beziatorpanel.h"
 #include "imgui.h"
 
-BeziatorPanel::BeziatorPanel(const char *name, shared_ptr<Shader> editmode)
-    : Beziator(name, editmode)
+BeziatorPanel::BeziatorPanel(const char *name)
+    : Beziator(name)
 {
 
 }
@@ -14,7 +14,7 @@ void BeziatorPanel::edit_panel(mat4 matr)
     float min_d = FLT_MAX, cur_d;
 
     for (size_t i = 0, size = this->points.size(); i < size; i++) {
-        glm_mat4_mulv(matr, this->points[i], p);
+        glm_mat4_mulv(matr, this->points[i].position, p);
         cur_d = glm_vec3_distance2(vec3 GLM_VEC3_ZERO_INIT, p);
         if (min_d > cur_d) {
             min_d = cur_d;
@@ -39,7 +39,7 @@ void BeziatorPanel::edit_panel(mat4 matr)
     for (size_t i = 0, size = this->points.size(); i < size; i++) {
         int id = static_cast<int>(i);
         ImGui::PushID(id);
-        changed |= ImGui::InputFloat3("##empty", this->points[i], "%g", 0);
+        changed |= ImGui::InputFloat3("##empty", this->points[i].position, "%g", 0);
         ImGui::SameLine(0, 5);
         ImGui::Text("%i", id);
         ImGui::PopID();
@@ -54,10 +54,10 @@ void BeziatorPanel::edit_panel(mat4 matr)
             this->rotate(i);
             this->generate();
         }
-        changed |= ImGui::InputInt4("##first", this->surfaces[i][0], 0);
-        changed |= ImGui::InputInt4("##second", this->surfaces[i][1], 0);
-        changed |= ImGui::InputInt4("##third", this->surfaces[i][2], 0);
-        changed |= ImGui::InputInt4("##fourth", this->surfaces[i][3], 0);
+        changed |= ImGui::InputScalarN("##first", ImGuiDataType_U64, this->surfaces[i][0], 4);
+        changed |= ImGui::InputScalarN("##second", ImGuiDataType_U64, this->surfaces[i][1], 4);
+        changed |= ImGui::InputScalarN("##third", ImGuiDataType_U64, this->surfaces[i][2], 4);
+        changed |= ImGui::InputScalarN("##fourth", ImGuiDataType_U64, this->surfaces[i][3], 4);
         ImGui::PopID();
     }
     ImGui::EndChild();

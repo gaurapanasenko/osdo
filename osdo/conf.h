@@ -11,6 +11,9 @@
 
 #define RES_DIR "../share/osdo"
 
+#define VERTEX_PATH RES_DIR"/%s.vs"
+#define FRAGMENT_PATH RES_DIR"/%s.fs"
+
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
 

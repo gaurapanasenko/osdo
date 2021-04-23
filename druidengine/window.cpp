@@ -95,15 +95,11 @@ int Window::init() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-    //glEnable(GL_MULTISAMPLE);
-    //glfwWindowHint(GLFW_SAMPLES, 8);
 
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    // glfw window creation
-    // --------------------
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "osdo",
                                           nullptr, nullptr);
     if (window == nullptr) {
@@ -121,8 +117,6 @@ int Window::init() {
     glfwSetCursorPosCallback(window, Window::mouse_motion_cb);
     glfwSetKeyCallback(window, Window::key_cb);
 
-    // load glew
-    // ---------
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
         printf("Failed to initialize GLEW\n");

@@ -88,7 +88,7 @@ void DeImgui::init(Window *win) {
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        return (void*)tex;
+        return (void*)(intptr_t)tex;
     };
     ifd::FileDialog::Instance().DeleteTexture = [](void* tex) {
         GLuint texID = (GLuint)(size_t)(tex);

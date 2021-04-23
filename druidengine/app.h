@@ -11,14 +11,12 @@
 #include "model.h"
 #include "window.h"
 #include "deimgui.h"
-
-#include "EASTL/hash_map.h"
-#include "EASTL/string.h"
-#include "EASTL/shared_ptr.h"
-using eastl::hash_map;
+#include "context.h"
+#include "subwindow.h"
+#include "EASTL/list.h"
+using eastl::list;
 using eastl::string;
-using eastl::shared_ptr;
-using eastl::make_shared;
+using eastl::pair;
 
 enum TRANSFORMATIONS {
     ROTATE    = 0,
@@ -27,25 +25,19 @@ enum TRANSFORMATIONS {
 };
 
 class App {
-    hash_map<string, shared_ptr<Model>> models;
-    hash_map<string, shared_ptr<Shader>> shaders;
-    Scene scene;
-    vector<Object> objects;
-    Camera camera;
+    Context context;
+    vector<Scene> scenes;
     Window window;
+    list<shared_ptr<SubWindow>> subwindows;
     DeImgui deimgui;
     bool interactive_mode;
     int trans[3][3];
-
-    // buffered data for loop
-    mat4 mat4buf, projection, last_camera;
-    vec4 vec4buf;
 public:
     int init();
 
     int loop();
 
-    bool load_shader(const char *name);
+    pair<string, string> create_shader_paths(const char * name);
 
     static void scroll(Window* window, GLdouble xoffset, GLdouble yoffset);
     static void mouse(Window* window, vec2 pos, vec2 offset);

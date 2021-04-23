@@ -4,23 +4,15 @@
 #include "osdo.h"
 
 #include "object.h"
+#include "context.h"
 
 #include "EASTL/vector.h"
 using eastl::vector;
 
 struct Scene {
-    vector<Object> objects;
-    // active element
-    size_t active;
+    hash_map<string, Object> objects;
 
-    // states
-    bool wireframe;
-    bool light;
-    bool dirLightOn;
-    bool pointLight1On;
-    bool pointLight2On;
-    bool spotLightOn;
-    Scene(const vector<Object>& objects = {});
+    Scene(const Context::Models& objects);
 };
 
 #endif // SCENE_H

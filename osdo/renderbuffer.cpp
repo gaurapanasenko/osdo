@@ -20,3 +20,16 @@ GLenum Renderbuffer::_default() const
 Renderbuffer::~Renderbuffer() {
     glDeleteRenderbuffers(1, &get_id());
 }
+
+void Renderbuffer::make_multisample(GLsizei size[2], GLenum target) const {
+    GlBinder b = binder();
+    glRenderbufferStorageMultisample(
+                GL_RENDERBUFFER, 4, target, size[0], size[1]);
+}
+
+void Renderbuffer::make(GLsizei size[2], GLenum target) const
+{
+    GlBinder b = binder();
+    glRenderbufferStorage(GL_RENDERBUFFER, target, size[0], size[1]);
+
+}
