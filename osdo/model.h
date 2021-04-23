@@ -10,10 +10,11 @@ using eastl::vector;
 class Model {
     vector<Vertex> vertices;
 public:
+    virtual ~Model();
     virtual void draw(Shader &shader);
     virtual void generate();
     virtual vector<Vertex>& get_vertices();
-    virtual ~Model();
+    virtual void edit_panel();
 };
 
 #endif // MODEL_H

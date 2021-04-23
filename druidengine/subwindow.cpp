@@ -1,6 +1,6 @@
 #include "subwindow.h"
 
-SubWindow::SubWindow(Context &context, Scene &scene)
+SubWindow::SubWindow(Context &context, shared_ptr<Scene> scene)
     : wireframe(false),
       light_mode(false),
       culling(false),
@@ -105,7 +105,7 @@ bool SubWindow::render_window(double delta_time) {
         if (wireframe)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-        for (auto &i : scene.objects) {
+        for (auto &i : scene->objects) {
             mat4 mat4buf;
             i.second.draw(sh, mat4buf, delta_time);
         }
@@ -126,7 +126,9 @@ bool SubWindow::render_window(double delta_time) {
             vec3 mouse_pos = {
                 io.MouseDelta.y / size.y * 2, -io.MouseDelta.x / size.x * 2, 0
             };
-            this->camera.rotate_all_camera(mouse_pos);
+            if (!this->camera_mode)
+                this->camera.rotate_all_camera(mouse_pos);
+            else this->camera.rotate_all_inverse(mouse_pos);
 
             //obj.rotate(X, -io.MouseDelta.y / size.y * 2);
             //obj.rotate(Y, io.MouseDelta.x / size.x * 2);
@@ -139,7 +141,7 @@ bool SubWindow::render_window(double delta_time) {
     auto active = this->context.active;
     if (active != this->context.models.end()) {
         shared_ptr<Model> model = active->second.get_model();
-        for (auto &i : scene.objects) {
+        for (auto &i : scene->objects) {
             if (i.second.get_model() != model) continue;
             mat4 mat4buf;
             i.second.get_mat4(mat4buf);
@@ -201,9 +203,15 @@ bool SubWindow::loop(size_t id, double delta_time) {
     ImGui::SetNextWindowSize(ImVec2{512, 512}, ImGuiCond_FirstUseEver);
     auto flags = ImGuiWindowFlags_NoScrollbar |
                  ImGuiWindowFlags_NoScrollWithMouse;
-    if (ImGui::Begin(name, nullptr, flags)) {
+    bool showWindow = true;
+    if (ImGui::Begin(name, &showWindow, flags)) {
         render_window(delta_time);
     }
     ImGui::End();
-    return true;
+    return showWindow;
+}
+
+shared_ptr<Scene> &SubWindow::get_scene()
+{
+    return scene;
 }

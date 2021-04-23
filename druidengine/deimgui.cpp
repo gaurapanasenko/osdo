@@ -153,12 +153,4 @@ void DeImgui::update() {
         ifd::FileDialog::Instance().Open(
                     "ModelOpenDialog", "Open a model",
                     "Model file (*.odom){.odom},.*");
-
-    if (ifd::FileDialog::Instance().IsDone("ModelOpenDialog")) {
-        if (ifd::FileDialog::Instance().HasResult()) {
-            std::string res = ifd::FileDialog::Instance().GetResult().u8string();
-            printf("OPEN[%s]\n", res.c_str());
-        }
-        ifd::FileDialog::Instance().Close();
-    }
 }

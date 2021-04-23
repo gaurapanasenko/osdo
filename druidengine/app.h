@@ -14,9 +14,11 @@
 #include "context.h"
 #include "subwindow.h"
 #include "EASTL/list.h"
+#include "EASTL/set.h"
 using eastl::list;
 using eastl::string;
 using eastl::pair;
+using eastl::set;
 
 enum TRANSFORMATIONS {
     ROTATE    = 0,
@@ -25,10 +27,13 @@ enum TRANSFORMATIONS {
 };
 
 class App {
+    typedef list<shared_ptr<SubWindow>> SubWindows;
+    typedef SubWindows::iterator SubWinIter;
     Context context;
-    vector<Scene> scenes;
     Window window;
-    list<shared_ptr<SubWindow>> subwindows;
+    list<shared_ptr<Scene>> scenes;
+    SubWindows subwindows;
+    hash_map<shared_ptr<Scene>, hash_map<SubWindows::pointer, SubWinIter>> winmap;
     DeImgui deimgui;
     bool interactive_mode;
     int trans[3][3];
@@ -38,6 +43,16 @@ public:
     int loop();
 
     pair<string, string> create_shader_paths(const char * name);
+    string create_model_paths(const char * name);
+
+    bool load_model(const string &path);
+
+    void add_subwindow(shared_ptr<Scene>& scene);
+    SubWinIter remove_subwindow(SubWinIter it);
+    list<shared_ptr<Scene>>::iterator
+    close_scene(list<shared_ptr<Scene>>::iterator it);
+
+    void object_edit(Object& object);
 
     static void scroll(Window* window, GLdouble xoffset, GLdouble yoffset);
     static void mouse(Window* window, vec2 pos, vec2 offset);

@@ -2,7 +2,6 @@
 #include "conf.h"
 #include <cstring>
 
-#define BEZIATOR_PATH RES_DIR"/%s.odom"
 #define BEZIER_TANGENT_INIT {\
 {  0,  0,  0,  0},\
 { -3,  9, -9,  3},\
@@ -14,32 +13,26 @@
 
 typedef Vertex *surface_t[4][4];
 
-Beziator::Beziator(const char *name) {
-    strncpy(this->name, name, 64);
-}
+Beziator::Beziator(const string& path) : path(path) {}
 
 bool Beziator::init() {
-    const size_t path_len = strlen(BEZIATOR_PATH);
-    const size_t len = strlen(BEZIATOR_PATH);
-    char *path = static_cast<char*>(calloc(len + path_len, sizeof(char)));
-    snprintf(path, len + path_len, BEZIATOR_PATH, name);
-    FILE *file = fopen(path, "r");
+    printf("%s\n", path.c_str());
+    FILE *file = fopen(path.c_str(), "r");
     if (file == nullptr) {
-        printf("ERROR: failed to open file %s\n", path);
-        free(path);
         return false;
     }
-    this->path = path;
 
     size_t points_size, surfaces_size;
     fscanf(file, "%lu%lu", &points_size, &surfaces_size);
-    this->points = vector<Vertex>(points_size);
-    this->surfaces = EasyVector<surfacei_t>(surfaces_size);
-    points_size = this->points.size();
-    surfaces_size = this->surfaces.size();
+    vector<Vertex> points(points_size);
+    vector<GLuint> surfaces_ints(surfaces_size * 16);
+    surfacei_t *surfaces = reinterpret_cast<surfacei_t*>(surfaces_ints.data());
+
+    points_size = points.size();
+    surfaces_size = surfaces_ints.size() / 16;
     for (size_t i = 0; i < points_size; i++) {
         vec4 init = GLM_VEC4_BLACK_INIT;
-        vec4 &point = this->points[i].position;
+        vec4 &point = points[i].position;
         glm_vec4_copy(init, point);
         fscanf(file, "%f%f%f", point, point + 1, point + 2);
     }
@@ -47,15 +40,15 @@ bool Beziator::init() {
     for (size_t i = 0; i < surfaces_size; i++) {
         for (j = 0; j < 4; j++)
             for (k = 0; k < 4; k++) {
-                fscanf(file, "%lu", this->surfaces[i][j] + k);
+                fscanf(file, "%u", surfaces[i][j] + k);
             }
     }
     fclose(file);
+    update(points, surfaces_ints);
     return true;
 }
 
 Beziator::~Beziator() {
-    free(this->path);
 }
 
 void Beziator::draw(Shader &shader) {
@@ -110,22 +103,24 @@ void bezier_surface(
 }
 
 bool Beziator::save() {
-    FILE *file = fopen(this->path, "w");
+    FILE *file = fopen(this->path.c_str(), "w");
     if (file == nullptr) {
-        printf("ERROR: failed to open file %s\n", this->path);
+        printf("ERROR: failed to open file %s\n", this->path.c_str());
         return false;
     }
-    fprintf(file, "%lu %lu\n", this->points.size(), this->surfaces.size());
-    for (size_t i = 0; i < this->points.size(); i++) {
-        vec4 &point = this->points[i].position;
+    size_t surfaces_size = this->indices.size() / 16;
+    surfacei_t *surfaces = reinterpret_cast<surfacei_t*>(indices.data());
+    fprintf(file, "%lu %lu\n", this->vertices.size(), this->indices.size() / 16);
+    for (size_t i = 0; i < this->vertices.size(); i++) {
+        vec4 &point = this->vertices[i].position;
         fprintf(file, "%f %f %f\n", static_cast<double>(point[0]),
                 static_cast<double>(point[1]), static_cast<double>(point[2]));
     }
     int j, k;
-    for (size_t i = 0; i < this->surfaces.size(); i++) {
+    for (size_t i = 0; i < surfaces_size; i++) {
         for (j = 0; j < 4; j++)
             for (k = 0; k < 4; k++) {
-                fprintf(file, "%lu ", this->surfaces[i][j][k]);
+                fprintf(file, "%u ", surfaces[i][j][k]);
             }
         fprintf(file, "\n");
     }
@@ -177,34 +172,35 @@ void Beziator::generate() {
     const size_t d = DETALIZATION;
     x = 1.f / (d - 1);
 
-    const unsigned long size =
-            6 * 9 * d * d * this->surfaces.size();
+    const size_t surfaces_size = this->indices.size() / 16;
+    surfacei_t *surfaces = reinterpret_cast<surfacei_t*>(indices.data());
+    const size_t size = 6 * 9 * d * d * surfaces_size;
     //const GLsizei sizei = static_cast<GLsizei>(size);
-    EasyVector<Vertex> V(size);
-    EasyVector<GLuint> E(size);
-    EasyVector<Vertex> V2(size);
-    EasyVector<GLuint> E2(size);
-    EasyVector<Vertex> V3(this->points.size());
-    EasyVector<GLuint> E3(this->points.size() * 4);
+    vector<Vertex> V(size);
+    vector<GLuint> E(size);
+    vector<Vertex> V2(size);
+    vector<GLuint> E2(size);
+    vector<Vertex> V3(this->vertices.size());
+    vector<GLuint> E3(this->vertices.size() * 4);
 
     // Creator frame vertices
-    for (size_t i = 0; i < this->points.size(); i++) {
-        point = &this->points[i].position;
+    for (size_t i = 0; i < this->vertices.size(); i++) {
+        point = &this->vertices[i].position;
         glm_vec3_copy(*point, V2[i].position);
         V2[i].color[1] = 255;
         V2[i].color[3] = 255;
     }
 
-    for (size_t i = 0; i < this->surfaces.size(); i++) {
+    for (size_t i = 0; i < surfaces_size; i++) {
         for (j = 0; j < 4; j++) {
             for (k = 0; k < 4; k++) {
-                surface[j][k] = &(this->points[this->surfaces[i][j][k]]);
+                surface[j][k] = &(this->vertices[surfaces[i][j][k]]);
             }
         }
         // Creator frame lines
         for (j = 0; j < ctrls_size; j++) {
             c = controls_lines[j];
-            E2[verts2++] = ucast(this->surfaces[i][c[0]][c[1]]);
+            E2[verts2++] = ucast(surfaces[i][c[0]][c[1]]);
         }
 
         // Create vertices
@@ -245,7 +241,7 @@ void Beziator::generate() {
                     if (st[2][0] == 8) {
                         st += 3;
                     }
-                    index = static_cast<size_t>((surface)[si+st[1][0]][sj+st[1][1]] - this->points.data());
+                    index = static_cast<size_t>((surface)[si+st[1][0]][sj+st[1][1]] - this->vertices.data());
                     glm_vec3_sub(((surface)[si+st[1][0]][sj+st[1][1]])->position,
                             ((surface)[si+st[0][0]][sj+st[0][1]])->position, m4b[0]);
                     glm_vec3_sub(((surface)[si+st[1][0]][sj+st[1][1]])->position,
@@ -273,17 +269,14 @@ void Beziator::generate() {
 
 void Beziator::rotate(size_t i) {
     surfacei_t s;
-    memcpy(s, this->surfaces[i], sizeof(surfacei_t));
+    surfacei_t *surfaces = reinterpret_cast<surfacei_t*>(indices.data());
+    memcpy(s, surfaces[i], sizeof(surfacei_t));
     for (int k = 0; k < 4; k++)
         for (int j = 0; j < 4; j++) {
-            this->surfaces[i][k][j] = s[j][k];
+            surfaces[i][k][j] = s[j][k];
         }
 }
 
 vector<Vertex> &Beziator::get_vertices() {
-    return points;
-}
-
-Beziator::surfaces_vector &Beziator::get_surfaces() {
-    return surfaces;
+    return vertices;
 }

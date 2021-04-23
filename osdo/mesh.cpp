@@ -48,7 +48,7 @@ vector<Vertex> &Mesh::get_vertices() {
     return vertices;
 }
 
-void Mesh::update(EasyVector<Vertex> vertices, EasyVector<GLuint> indices) {
+void Mesh::update(vector<Vertex> vertices, vector<GLuint> indices) {
     Mesh::clear();
     this->vertices = vertices;
     this->indices = indices;
@@ -79,8 +79,8 @@ void Mesh::clear() {
 
 
 void Mesh::cube_update() {
-    EasyVector<Vertex> V(sizeof(EXAMPLE_CUBE_VERTEX) / sizeof(Vertex));
-    EasyVector<GLuint> E(sizeof(EXAMPLE_CUBE_INDICIES) / sizeof(GLuint));
+    vector<Vertex> V(sizeof(EXAMPLE_CUBE_VERTEX) / sizeof(Vertex));
+    vector<GLuint> E(sizeof(EXAMPLE_CUBE_INDICIES) / sizeof(GLuint));
     memcpy(V.data(), EXAMPLE_CUBE_VERTEX, sizeof(EXAMPLE_CUBE_VERTEX));
     memcpy(E.data(), EXAMPLE_CUBE_INDICIES, sizeof(EXAMPLE_CUBE_INDICIES));
     update(V, E);

@@ -5,6 +5,7 @@
 #include "beziatorpanel.h"
 #include <imgui.h>
 #include "buffer.h"
+#include "ImFileDialog.h"
 
 #include <EASTL/algorithm.h>
 using eastl::max;
@@ -30,24 +31,16 @@ int App::init() {
     }
 
     {
-        auto beziator = make_shared<BeziatorPanel>("car");
-        bool success = beziator->init();
-        if (!success)
-            return -1;
-        beziator->generate();
-
-        Object object(beziator);
-        object.translate_object(vec3{-5, 5, 0});
-        object.scale(vec3{4, 4, 4});
-        object.rotate_object(M_PI_F / 1.1f, X);
-        this->context.models["car"] = object;
-
-        auto cube_model = make_shared<Mesh>();
-        cube_model->cube_update();
-        //this->context.models["cube"] = Object(cube_model);
+        string path = create_model_paths("car");
+        if (load_model(path)) {
+            auto& object = this->context.models[path];
+            object.translate_object(vec3{-5, 5, 0});
+            object.scale(vec3{4, 4, 4});
+            object.rotate_object(M_PI_F / 1.1f, X);
+        }
     }
-    scenes.push_back(Scene(context.models));
-    subwindows.emplace_back(make_shared<SubWindow>(context, scenes[0]));
+    scenes.emplace_back(Scene::create(context.models));
+    add_subwindow(scenes.back());
 
     this->deimgui.init(&this->window);
 
@@ -71,18 +64,122 @@ int App::loop() {
         // -----
         App::process_input();
 
+        if (ifd::FileDialog::Instance().IsDone("ModelOpenDialog")) {
+            if (ifd::FileDialog::Instance().HasResult()) {
+                string res = ifd::FileDialog::Instance().GetResult().c_str();
+                load_model(res);
+            }
+            ifd::FileDialog::Instance().Close();
+        }
+
+        if (context.active != context.models.end()) {
+            context.active->second.get_model()->edit_panel();
+        }
+
         ImGui::SetNextWindowPos(ImVec2{4, 4}, ImGuiCond_FirstUseEver, ImVec2{0,0});
         ImGui::SetNextWindowSize(ImVec2{300, 512}, ImGuiCond_FirstUseEver);
 
-        ImGui::Begin("OSDO", nullptr, 0);
-        if (ImGui::Button("Switch active model"))
-            context.next_active();
+        if (ImGui::Begin("Models")) {
+            if (ImGui::Button("Next"))
+                context.next_active();
+            ImGui::SameLine();
+            if (ImGui::Button("Add cube")) {
+                auto cube_model = make_shared<Mesh>();
+                cube_model->cube_update();
+                this->context.models["cube"] = Object(cube_model);
+            }
+            auto& models = context.models;
+            auto flags = ImGuiTableFlags_SizingStretchProp;
+            if (ImGui::BeginTable("models_table", 2, flags)) {
+                ImGui::TableSetupColumn("Model name", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Model action", ImGuiTableColumnFlags_WidthFixed, -1);
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                if (ImGui::Selectable("None", context.active == models.end()))
+                    context.active = context.models.end();
+                ImGui::TableNextColumn();
+                for (auto it = models.begin(), end = models.end(); it != end;) {
+                    ImGui::PushID(&*it);
+                    char buf[256];
+                    snprintf(buf, 256, "Model: \"%s\"", it->first.c_str());
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    if (ImGui::Selectable(buf, context.active == it))
+                       context.active = it;
+                    ImGui::TableNextColumn();
+                    bool erase = ImGui::SmallButton("-");
+                    ImGui::SameLine();
+                    if (ImGui::SmallButton("+")) {
+                        auto s = Scene::create(
+                                    Context::Models {{it->first, it->second}});
+                        scenes.emplace_back(s);
+                        add_subwindow(scenes.back());
+                    }
+                    if (erase)
+                       it = models.erase(it);
+                    else ++it;
+                    ImGui::PopID();
+                }
+                ImGui::EndTable();
+            }
+            if (ImGui::Begin("Scenes")) {
+                auto flags = ImGuiTableFlags_SizingStretchProp;
+                if (ImGui::BeginTable("scenes_table", 2, flags)) {
+                    ImGui::TableSetupColumn("Scene name", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("Scene action", ImGuiTableColumnFlags_WidthFixed, -1);
+                    int i = 0, j;
+                    for (auto it = scenes.begin(), end = scenes.end(); it != end;) {
+                        ImGui::PushID(&*it);
+                        char buf[256];
+                        snprintf(buf, 256, "Scene %i", i++);
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        if (ImGui::TreeNode(buf)) {
+                            j = 0;
+                            auto& objects = (*it)->objects;
+                            for (auto i = objects.begin(), endi = objects.end(); i != endi;) {
+                                ImGui::PushID(&*i);
+                                Object &obj = i->second;
+                                snprintf(buf, 256, "Object: \"%s\"", i->first.c_str());
+                                bool erase = false;
+                                if (ImGui::TreeNode(buf)) {
+                                    erase = ImGui::SmallButton("-");
+                                    object_edit(obj);
+                                    ImGui::TreePop();
+                                }
+                                if (erase)
+                                    i = objects.erase(i);
+                                else
+                                    ++i;
+                                ImGui::PopID();
+                            }
+                            ImGui::TreePop();
+                        }
+                        ImGui::TableNextColumn();
+                        bool erase = ImGui::SmallButton("-");
+                        ImGui::SameLine();
+                        if (ImGui::SmallButton("+")) {
+                            add_subwindow(*it);
+                        }
+                        if (erase)
+                            it = close_scene(it);
+                        else ++it;
+                        ImGui::PopID();
+                    }
+                    ImGui::EndTable();
+                }
+            }
+            ImGui::End();
+        }
         ImGui::End();
+
         size_t id = 0;
 
-        for (auto i = subwindows.begin(), end = subwindows.end(); i != end; i++) {
+        for (auto i = subwindows.begin(), end = subwindows.end(); i != end;) {
             id++;
-            (*i)->loop(id, window.get_delta_time());
+            if (!(*i)->loop(id, window.get_delta_time()))
+                i = subwindows.erase(i);
+            else i++;
         }
 
         this->deimgui.render();
@@ -99,6 +196,69 @@ pair<string, string> App::create_shader_paths(const char *name) {
     snprintf(&vertex_path[0], vertex_path.size(), VERTEX_PATH, name);
     snprintf(&fragment_path[0], fragment_path.size(), FRAGMENT_PATH, name);
     return {vertex_path, fragment_path};
+}
+
+string App::create_model_paths(const char *name)
+{
+    string path;
+    path.resize(strlen(name) + strlen(BEZIATOR_PATH));
+    snprintf(&path[0], path.size(), BEZIATOR_PATH, name);
+    return path;
+}
+
+bool App::load_model(const string &path) {
+    if (this->context.models.find(path) != this->context.models.end())
+        return false;
+
+    auto beziator = make_shared<BeziatorPanel>(path);
+
+    if (!beziator || !beziator->init())
+        return false;
+
+    beziator->generate();
+
+    Object object(beziator);
+    this->context.models[path] = object;
+    return true;
+}
+
+void App::add_subwindow(shared_ptr<Scene>& scene) {
+    auto win = make_shared<SubWindow>(context, scene);
+    subwindows.emplace_back(win);
+    winmap[scene].emplace(make_pair(&subwindows.back(), --subwindows.end()));
+}
+
+App::SubWinIter App::remove_subwindow(SubWinIter it) {
+    winmap[(*it)->get_scene()].erase(&*it);
+    return subwindows.erase(it);
+}
+
+list<shared_ptr<Scene>>::iterator
+App::close_scene(list<shared_ptr<Scene>>::iterator it) {
+    auto wins = winmap[*it];
+    for (auto& i : wins) {
+        remove_subwindow(i.second);
+    }
+    return scenes.erase(it);
+}
+
+void App::object_edit(Object &object) {
+    vec4 vector;
+
+    object.get_position(vector);
+    if (ImGui::DragFloat3("Potision", vector, 0.1f, 0, 0)) {
+        object.set_position(vector);
+    }
+
+    object.get_rotation(vector);
+    if (ImGui::DragFloat3("Rotation", vector, 0.01f, 0, 0)) {
+        object.set_rotation(vector);
+    }
+
+    object.get_animation(vector);
+    if (ImGui::DragFloat3("Animation", vector, 0.01f, 0, 0)) {
+        object.set_animation(vector);
+    }
 }
 
 void App::scroll(UNUSED Window* window, UNUSED GLdouble xoffset,
@@ -123,8 +283,6 @@ void App::mouse_button_callback(
         UNUSED Window *window, UNUSED enum BUTTONS button,
         UNUSED bool pressed) {}
 
-// glfw: when the keyboard was used, this callback is called
-// ------------------------------------------------------------------
 void App::key(Window* window, enum KEYS key, bool pressed) {
     App *app = static_cast<App*>(window->get_user_pointer());
     int t = pressed ? 1 : -1;

@@ -17,6 +17,8 @@ public:
     GlBindable(const GLuint id);
     virtual ~GlBindable();
 
+    GlBindable(const GlBindable&) = delete;
+    GlBindable(GlBindable&&) = delete;
     GlBindable& operator=(const GlBindable&) = delete;
     GlBindable& operator=(GlBindable&&) = delete;
 

@@ -29,6 +29,8 @@ public:
 
     bool load_shader(const char *name, const char *vertex_path,
                      const char *fragment_path);
+
+    bool load_model(const string& path);
 };
 
 #endif // CONTEXT_H

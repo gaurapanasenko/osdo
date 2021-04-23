@@ -11,6 +11,7 @@
 #include "buffer.h"
 using eastl::max;
 using eastl::string;
+using eastl::shared_ptr;
 
 class SubWindow
 {
@@ -21,18 +22,19 @@ class SubWindow
     bool camera_mode;
     Camera camera;
     Context &context;
-    Scene &scene;
+    shared_ptr<Scene> scene;
     Buffer buffer;
 
     mat4 projection, last_camera;
 public:
-    SubWindow(Context &context, Scene &scene);
+    SubWindow(Context &context, shared_ptr<Scene> scene);
 
     bool params_window();
 
     bool render_window(double delta_time);
 
     bool loop(size_t id, double delta_time);
+    shared_ptr<Scene>& get_scene();
 };
 
 #endif // SUBWINDOW_H

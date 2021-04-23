@@ -6,9 +6,9 @@
 class BeziatorPanel : public Beziator
 {
 public:
-    BeziatorPanel(const char *name);
+    BeziatorPanel(const string& path);
 
-    void edit_panel(mat4 matr);
+    void edit_panel() override;
 };
 
 #endif // BEZIATORPANEL_H
