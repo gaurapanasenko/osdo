@@ -58,6 +58,7 @@ void Beziator::draw(Shader &shader) {
     //mesh_draw_mode(&this->frame, GL_LINES);
     shader.set_float("alpha", 0.5f);
     this->mesh.draw_mode(GL_TRIANGLES);
+    //Mesh::draw_mode(GL_TRIANGLES);
     //mesh_draw_mode(&this->normals, GL_LINES);
     shader.set_float("alpha", 1);
 }

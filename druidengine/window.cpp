@@ -201,9 +201,11 @@ bool Window::is_mouse_caputed() {
 }
 
 void Window::grab_mouse(bool grab) {
-    this->mouse_capute = grab;
-    glfwSetInputMode(this->window, GLFW_CURSOR,
-                     grab ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    if (grab != this->mouse_capute) {
+        this->mouse_capute = grab;
+        glfwSetInputMode(this->window, GLFW_CURSOR,
+                         grab ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    }
 
 }
 

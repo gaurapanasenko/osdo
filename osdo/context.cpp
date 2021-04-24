@@ -12,9 +12,8 @@ Context::Models::iterator &Context::next_active() {
     return active;
 }
 
-bool Context::load_shader(const char *name, const char *vertex_path,
-                          const char *fragment_path) {
-    auto shader = Shader::create(vertex_path, fragment_path);
+bool Context::load_shader(const char *name, const Shader::shader_map& shaders) {
+    auto shader = Shader::create(shaders);
     if (!shader)
         return false;
     this->shaders[string(name)] = shader;

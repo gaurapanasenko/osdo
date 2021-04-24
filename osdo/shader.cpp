@@ -3,6 +3,14 @@
 
 #include "shader.h"
 #include "conf.h"
+#include "EASTL/hash_map.h"
+using eastl::hash_map;
+
+static hash_map<ShaderType, GLenum> TYPES_MAP = {
+    {VERT_SHADER, GL_VERTEX_SHADER},
+    {GEOM_SHADER, GL_GEOMETRY_SHADER},
+    {FRAG_SHADER, GL_FRAGMENT_SHADER},
+};
 
 char * readFromFile(const char *path) {
     char* data;
@@ -51,46 +59,47 @@ bool check_shader(GLuint shader, const int type) {
     return true;
 }
 
-bool compile(const char* vertexCode, const char* fragmentCode, GLuint *shader) {
-    // 2. compile shaders
-    GLuint vertex, fragment, sh;
+class ShaderSource {
+    const GLuint id;
+public:
+    ShaderSource(const GLuint id) : id(id) {}
+    static shared_ptr<ShaderSource> create(GLenum type, const char *code) {
+        const GLuint shader = glCreateShader(type);
+        glShaderSource(shader, 1, &code, nullptr);
+        glCompileShader(shader);
+        if (!check_shader(shader, 1)) {
+            return {};
+        }
+        return make_shared<ShaderSource>(shader);
+    }
+    static shared_ptr<ShaderSource> create_file(GLenum type, const string& path) {
+        GLchar* code = readFromFile(path.c_str());
+        if (!code)
+            return {};
+        return create(type, code);
+    }
+    GLuint get_id() {return id;}
+    void attach(const GLuint program) {
+        glAttachShader(program, id);
+    }
+};
 
-    // vertex shader
-    vertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex, 1, &vertexCode, nullptr);
-    glCompileShader(vertex);
-    if (!check_shader(vertex, 1)) {
-        printf("Failed to compile vertex shader.\n%s", vertexCode);
-        return false;
+shared_ptr<Shader> compile(vector<shared_ptr<ShaderSource>> shaders) {
+    for (auto &i : shaders) {
+        if (!i)
+            return {};
     }
 
-    // fragment Shader
-    fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment, 1, &fragmentCode, nullptr);
-    glCompileShader(fragment);
-    if (!check_shader(fragment, 1)) {
-        printf("Failed to compile fragment shader.\n%s", fragmentCode);
-        glDeleteShader(vertex);
-        return false;
+    GLuint sh = glCreateProgram();
+    for (auto &i : shaders) {
+        i->attach(sh);
     }
-
-    // shader Program
-    sh = glCreateProgram();
-    glAttachShader(sh, vertex);
-    glAttachShader(sh, fragment);
     glLinkProgram(sh);
     if (!check_shader(sh, 0)) {
-        printf("Failed to attach shaders.");
-        glDeleteShader(vertex);
-        glDeleteShader(fragment);
-        return false;
+        return {};
     }
 
-    // delete the shaders as they're linked into our program now and no longer necessery
-    glDeleteShader(vertex);
-    glDeleteShader(fragment);
-    *shader = sh;
-    return true;
+    return make_shared<Shader>(sh);
 }
 
 void Shader::_bind(const GLuint id, UNUSED GLenum target) const
@@ -104,21 +113,14 @@ Shader::~Shader() {
     glDeleteProgram(this->get_id());
 }
 
-shared_ptr<Shader> Shader::create(const char *vertex_path,
-                                  const char *fragment_path) {
-    shared_ptr<Shader> shader_ptr;
-    GLchar* vertex = readFromFile(vertex_path);
-    GLchar* fragment = readFromFile(fragment_path);
-    GLuint shader = 0;
-
-    if (vertex != nullptr && fragment != nullptr &&
-            compile(vertex, fragment, &shader)) {
-        shader_ptr = make_shared<Shader>(shader);
+shared_ptr<Shader> Shader::create(const Shader::shader_map& shaders_paths)
+{
+    vector<shared_ptr<ShaderSource>> shaders;
+    for (auto& i : shaders_paths) {
+        shaders.push_back(
+                    ShaderSource::create_file(TYPES_MAP[i.first], i.second));
     }
-    free(vertex);
-    free(fragment);
-
-    return shader_ptr;
+    return compile(shaders);
 }
 
 void Shader::set_bool(const char* name, bool value) {

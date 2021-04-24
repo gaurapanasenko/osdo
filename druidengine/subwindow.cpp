@@ -1,13 +1,14 @@
 #include "subwindow.h"
 
-SubWindow::SubWindow(Context &context, shared_ptr<Scene> scene)
+SubWindow::SubWindow(Window &window, Context &context, shared_ptr<Scene> scene)
     : wireframe(false),
       light_mode(false),
       culling(false),
       transparency(false),
       camera_mode(false),
       context(context),
-      scene(scene)
+      scene(scene),
+      window(window)
 {
     this->camera.translate_camera(BASIS0POS);
 }
@@ -129,9 +130,6 @@ bool SubWindow::render_window(double delta_time) {
             if (!this->camera_mode)
                 this->camera.rotate_all_camera(mouse_pos);
             else this->camera.rotate_all_inverse(mouse_pos);
-
-            //obj.rotate(X, -io.MouseDelta.y / size.y * 2);
-            //obj.rotate(Y, io.MouseDelta.x / size.x * 2);
         }
         this->camera.translate(vec3{0, 0, -io.MouseWheel}, 1);
     }

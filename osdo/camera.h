@@ -40,18 +40,7 @@ public:
     void rotate_camera(float angle, enum coord_enum coord);
     void rotate_all_camera(vec3 angles);
 
-    void rotate_all_inverse(vec3 angles) {
-        mat4 m, out;
-        get_mat4(m);
-        glm_mat4_inv(m, m);
-        glm_euler_xyz(angles, out);
-        glm_mat4_mul(out, m, m);
-        glm_mat4_inv(m, m);
-        glm_vec3_copy(m[3], position);
-        //glm_vec3_muladds(position, 0.f, position);
-        glm_vec3_copy(vec3 GLM_VEC3_ZERO_INIT, m[3]);
-        glm_mat4_copy(m, rotation);
-    }
+    void rotate_all_inverse(vec3 angles);
 
 };
 

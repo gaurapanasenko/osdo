@@ -108,3 +108,17 @@ void Camera::rotate_camera(float angle, enum coord_enum coord) {
 void Camera::rotate_all_camera(vec3 angles) {
     Camera::rotate_all(angles);
 }
+
+void Camera::rotate_all_inverse(vec3 angles) {
+    mat4 m = GLM_MAT4_IDENTITY_INIT;
+    vec4 v = GLM_VEC4_BLACK_INIT;
+
+    glm_vec3_copy(rotation[0], v);
+    glm_rotate(m, angles[0], v);
+    glm_vec3_copy(rotation[1], v);
+    glm_rotate(m, angles[1], v);
+    glm_vec3_copy(rotation[2], v);
+    glm_rotate(m, angles[2], v);
+    glm_mat4_mul(m, rotation, rotation);
+    glm_mat4_mulv(m, position, position);
+}

@@ -9,6 +9,7 @@
 #include "imgui.h"
 #include <EASTL/algorithm.h>
 #include "buffer.h"
+#include "window.h"
 using eastl::max;
 using eastl::string;
 using eastl::shared_ptr;
@@ -24,10 +25,11 @@ class SubWindow
     Context &context;
     shared_ptr<Scene> scene;
     Buffer buffer;
+    Window &window;
 
     mat4 projection, last_camera;
 public:
-    SubWindow(Context &context, shared_ptr<Scene> scene);
+    SubWindow(Window &window, Context &context, shared_ptr<Scene> scene);
 
     bool params_window();
 

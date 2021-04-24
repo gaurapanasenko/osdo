@@ -11,8 +11,9 @@
 
 #define RES_DIR "../share/osdo"
 
-#define VERTEX_PATH RES_DIR"/%s.vs"
-#define FRAGMENT_PATH RES_DIR"/%s.fs"
+#define VERTEX_PATH RES_DIR"/%s.vert"
+#define GEOMETRY_PATH RES_DIR"/%s.geom"
+#define FRAGMENT_PATH RES_DIR"/%s.frag"
 #define BEZIATOR_PATH RES_DIR"/%s.odom"
 
 #define MAX_VERTEX_BUFFER 512 * 1024

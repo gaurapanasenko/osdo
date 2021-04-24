@@ -27,8 +27,7 @@ public:
 
     Models::iterator &next_active();
 
-    bool load_shader(const char *name, const char *vertex_path,
-                     const char *fragment_path);
+    bool load_shader(const char *name, const Shader::shader_map& shaders);
 
     bool load_model(const string& path);
 };

@@ -4,17 +4,27 @@
 #include "osdo.h"
 #include "glbindable.h"
 #include "EASTL/shared_ptr.h"
+#include "EASTL/string.h"
+#include "EASTL/hash_map.h"
 using eastl::shared_ptr;
+using eastl::string;
+using eastl::hash_map;
 using eastl::make_shared;
+
+enum ShaderType {
+    VERT_SHADER,
+    GEOM_SHADER,
+    FRAG_SHADER
+};
 
 class Shader : public GlBindable {
     virtual void _bind(const GLuint id, GLenum target) const override;
 public:
+    typedef hash_map<ShaderType, string> shader_map;
     Shader(const GLuint shader);
     ~Shader() override;
 
-    static shared_ptr<Shader> create(const char *vertex_path,
-                                     const char *fragment_path);
+    static shared_ptr<Shader> create(const shader_map& shaders_paths);
 
     void set_bool (const char* name, bool value);
     void set_int  (const char* name, int value);

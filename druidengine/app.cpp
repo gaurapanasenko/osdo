@@ -23,9 +23,9 @@ int App::init() {
     this->window.set_mouse_button_cb(App::mouse_button_callback);
     this->window.set_key_cb(App::key);
 
-    auto shader_paths = create_shader_paths("editmode");
-    if (!this->context.load_shader("main", shader_paths.first.c_str(),
-                                   shader_paths.second.c_str())) {
+    //auto shader_paths = create_shader_paths("editmode");
+    auto shader_paths = create_geom_shader_paths("bezier");
+    if (!this->context.load_shader("main", shader_paths)) {
         printf("Failed to compile shaders.\n");
         return -1;
     }
@@ -188,22 +188,31 @@ int App::loop() {
     return 0;
 }
 
-pair<string, string> App::create_shader_paths(const char *name) {
-    const size_t len = strlen(name);
-    string vertex_path, fragment_path;
-    vertex_path.resize(len + strlen(VERTEX_PATH));
-    fragment_path.resize(len + strlen(FRAGMENT_PATH));
-    snprintf(&vertex_path[0], vertex_path.size(), VERTEX_PATH, name);
-    snprintf(&fragment_path[0], fragment_path.size(), FRAGMENT_PATH, name);
-    return {vertex_path, fragment_path};
+string get_path_from_name(const char *name, const char *pattern) {
+    string s;
+    s.resize(strlen(name) + strlen(pattern));
+    snprintf(&s[0], s.size(), pattern, name);
+    return s;
+}
+
+Shader::shader_map App::create_shader_paths(const char *name) {
+    return {
+        {VERT_SHADER, get_path_from_name(name, VERTEX_PATH)},
+        {FRAG_SHADER, get_path_from_name(name, FRAGMENT_PATH)},
+    };
+}
+
+Shader::shader_map App::create_geom_shader_paths(const char *name) {
+    return {
+        {VERT_SHADER, get_path_from_name(name, VERTEX_PATH)},
+        {GEOM_SHADER, get_path_from_name(name, GEOMETRY_PATH)},
+        {FRAG_SHADER, get_path_from_name(name, FRAGMENT_PATH)},
+    };
 }
 
 string App::create_model_paths(const char *name)
 {
-    string path;
-    path.resize(strlen(name) + strlen(BEZIATOR_PATH));
-    snprintf(&path[0], path.size(), BEZIATOR_PATH, name);
-    return path;
+    return get_path_from_name(name, BEZIATOR_PATH);
 }
 
 bool App::load_model(const string &path) {
@@ -223,7 +232,7 @@ bool App::load_model(const string &path) {
 }
 
 void App::add_subwindow(shared_ptr<Scene>& scene) {
-    auto win = make_shared<SubWindow>(context, scene);
+    auto win = make_shared<SubWindow>(window, context, scene);
     subwindows.emplace_back(win);
     winmap[scene].emplace(make_pair(&subwindows.back(), --subwindows.end()));
 }
