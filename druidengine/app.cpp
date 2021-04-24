@@ -24,7 +24,7 @@ int App::init() {
     this->window.set_key_cb(App::key);
 
     //auto shader_paths = create_shader_paths("editmode");
-    auto shader_paths = create_geom_shader_paths("bezier");
+    auto shader_paths = create_adv_shader_paths("bezier");
     if (!this->context.load_shader("main", shader_paths)) {
         printf("Failed to compile shaders.\n");
         return -1;
@@ -202,10 +202,11 @@ Shader::shader_map App::create_shader_paths(const char *name) {
     };
 }
 
-Shader::shader_map App::create_geom_shader_paths(const char *name) {
+Shader::shader_map App::create_adv_shader_paths(const char *name) {
     return {
         {VERT_SHADER, get_path_from_name(name, VERTEX_PATH)},
-        {GEOM_SHADER, get_path_from_name(name, GEOMETRY_PATH)},
+        {TESC_SHADER, get_path_from_name(name, TESC_PATH)},
+        {TESE_SHADER, get_path_from_name(name, TESE_PATH)},
         {FRAG_SHADER, get_path_from_name(name, FRAGMENT_PATH)},
     };
 }

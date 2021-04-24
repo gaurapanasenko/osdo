@@ -43,7 +43,7 @@ public:
     int loop();
 
     Shader::shader_map create_shader_paths(const char * name);
-    Shader::shader_map create_geom_shader_paths(const char * name);
+    Shader::shader_map create_adv_shader_paths(const char * name);
     string create_model_paths(const char * name);
 
     bool load_model(const string &path);

@@ -68,7 +68,7 @@ bool SubWindow::render_window(double delta_time) {
         if (this->light_mode)
             this->camera.get_direction(direction);
         sh.set_vec3("dirLight.direction", direction);
-        sh.set_vec3f("dirLight.ambient", 0.0f, 0.0f, 0.0f);
+        sh.set_vec3f("dirLight.ambient", 0.1f, 0.1f, 0.1f);
         sh.set_vec3f("dirLight.diffuse", 0.6f, 0.6f, 0.6f);
         sh.set_vec3f("dirLight.specular", 0.f, 0.f, 0.f);
 

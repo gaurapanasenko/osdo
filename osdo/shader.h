@@ -13,8 +13,10 @@ using eastl::make_shared;
 
 enum ShaderType {
     VERT_SHADER,
+    TESC_SHADER,
+    TESE_SHADER,
     GEOM_SHADER,
-    FRAG_SHADER
+    FRAG_SHADER,
 };
 
 class Shader : public GlBindable {

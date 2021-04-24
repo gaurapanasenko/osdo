@@ -1,6 +1,6 @@
-#version 330
+#version 400 core
 layout(triangles) in;
-layout(triangle_strip, max_vertices=3) out;
+layout(triangle_strip, max_vertices=16) out;
 
 struct Data {
     vec4 color;
@@ -14,7 +14,7 @@ out Data geometry;
 
 void main() {
     int i;
-    for(i = 0; i < 3; i++) {
+    for(i = 0; i < 16; i++) {
         gl_Position = gl_in[i].gl_Position;
         geometry.color = vertex[i].color;
         geometry.uv = vertex[i].uv;
