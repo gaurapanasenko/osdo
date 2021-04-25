@@ -1,14 +1,14 @@
-#version 400 core
+#version 420 core
 
 struct Data {
     vec4 color;
     vec2 uv;
-    vec3 pos;
     vec3 normal;
+    vec3 frag_pos;
 };
 
-in Data vertex[];
-out Data tesc_data[];
+layout(location = 0) in Data inData[];
+layout(location = 0) out Data outData[];
 
 uniform int inner;
 uniform int outer;
@@ -24,8 +24,8 @@ void main(void) {
     gl_TessLevelOuter[3] = outer;
 
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
-    tesc_data[gl_InvocationID].color = vertex[gl_InvocationID].color;
-    tesc_data[gl_InvocationID].uv = vertex[gl_InvocationID].uv;
-    tesc_data[gl_InvocationID].pos = vertex[gl_InvocationID].pos;
-    tesc_data[gl_InvocationID].normal = vertex[gl_InvocationID].normal;
+    outData[gl_InvocationID].color = inData[gl_InvocationID].color;
+    outData[gl_InvocationID].uv = inData[gl_InvocationID].uv;
+    outData[gl_InvocationID].normal = inData[gl_InvocationID].normal;
+    outData[gl_InvocationID].frag_pos = inData[gl_InvocationID].frag_pos;
 }

@@ -27,7 +27,7 @@ public:
     void update(vector<Vertex> vertices, vector<GLuint> indices);
     void clear();
 
-    void draw(Shader &shader) override;
+    void draw(Shader &shader, bool pre_generated) override;
     void draw_mode(GLenum mode);
 };
 

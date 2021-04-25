@@ -53,12 +53,13 @@ void Object::translate(vec3 distances, float delta_time) {
     Object::translate_object( new_distances);
 }
 
-void Object::draw(Shader &shader, mat4 mat4buf, GLdouble delta_time) {
+void Object::draw(Shader &shader, mat4 mat4buf, GLdouble delta_time,
+                  bool pre_generated) {
     // render the loaded model
     Object::animate(static_cast<GLfloat>(delta_time));
     Object::get_mat4(mat4buf);
     shader.set_mat4("model", mat4buf);
-    this->model->draw(shader);
+    this->model->draw(shader, pre_generated);
 }
 
 void Object::rotate(enum coord_enum coord, float delta_time) {

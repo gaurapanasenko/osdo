@@ -7,7 +7,6 @@
 { -3,  9, -9,  3},\
 {  6,-12,  6,  0},\
 { -3,  3,  0,  0},}
-#define DETALIZATION 8
 
 #define ucast static_cast<unsigned>
 
@@ -29,12 +28,15 @@ bool Beziator::init() {
     surfacei_t *surfaces = reinterpret_cast<surfacei_t*>(surfaces_ints.data());
 
     points_size = points.size();
+    unsigned char color[4] = {0, 255, 0, 255};
     surfaces_size = surfaces_ints.size() / 16;
     for (size_t i = 0; i < points_size; i++) {
         vec4 init = GLM_VEC4_BLACK_INIT;
         vec4 &point = points[i].position;
         glm_vec4_copy(init, point);
         fscanf(file, "%f%f%f", point, point + 1, point + 2);
+        memcpy(points[i].color, color, 4);
+        memcpy(points[i].normal, point, 3 * sizeof(float));
     }
     int j, k;
     for (size_t i = 0; i < surfaces_size; i++) {
@@ -51,19 +53,13 @@ bool Beziator::init() {
 Beziator::~Beziator() {
 }
 
-void Beziator::draw(Shader &shader) {
-    //shader_set_vec3(this->editmode, "min_coord", this->min_coord);
-    //shader_set_vec3(this->editmode, "max_coord", this->max_coord);
-    //mesh_draw_mode(&this->frame, GL_POINTS);
-    //mesh_draw_mode(&this->frame, GL_LINES);
-    shader.set_float("alpha", 0.5f);
-    shader.set_int("inner", 8);
-    shader.set_int("outer", 8);
-    glPatchParameteri(GL_PATCH_VERTICES, 16);
-    //this->mesh.draw_mode(GL_TRIANGLES);
-    Mesh::draw_mode(GL_PATCHES);
-    //mesh_draw_mode(&this->normals, GL_LINES);
-    shader.set_float("alpha", 1);
+void Beziator::draw(Shader &shader, bool pre_generated) {
+    if (pre_generated) {
+        this->mesh.draw_mode(GL_TRIANGLES);
+    } else {
+        glPatchParameteri(GL_PATCH_VERTICES, 16);
+        Mesh::draw_mode(GL_PATCHES);
+    }
 }
 
 
@@ -132,7 +128,7 @@ bool Beziator::save() {
     return true;
 }
 
-void Beziator::generate() {
+void Beziator::generate(size_t d) {
     static const int controls_lines[][2] = {
         {0, 0}, {0, 1}, {0, 0}, {1, 1}, {0, 0}, {1, 0},
         {0, 3}, {0, 2}, {0, 3}, {1, 2}, {0, 3}, {1, 3},
@@ -173,7 +169,6 @@ void Beziator::generate() {
 
     Mesh *mesh = &this->mesh, *mesh_skel = &this->frame;
             //*mesh_normals = &this->normals;
-    const size_t d = DETALIZATION;
     x = 1.f / (d - 1);
 
     const size_t surfaces_size = this->indices.size() / 16;
@@ -182,18 +177,18 @@ void Beziator::generate() {
     //const GLsizei sizei = static_cast<GLsizei>(size);
     vector<Vertex> V(size);
     vector<GLuint> E(size);
-    vector<Vertex> V2(size);
+    /*vector<Vertex> V2(size);
     vector<GLuint> E2(size);
     vector<Vertex> V3(this->vertices.size());
-    vector<GLuint> E3(this->vertices.size() * 4);
+    vector<GLuint> E3(this->vertices.size() * 4);*/
 
     // Creator frame vertices
-    for (size_t i = 0; i < this->vertices.size(); i++) {
+    /*for (size_t i = 0; i < this->vertices.size(); i++) {
         point = &this->vertices[i].position;
         glm_vec3_copy(*point, V2[i].position);
         V2[i].color[1] = 255;
         V2[i].color[3] = 255;
-    }
+    }*/
 
     for (size_t i = 0; i < surfaces_size; i++) {
         for (j = 0; j < 4; j++) {
@@ -204,7 +199,7 @@ void Beziator::generate() {
         // Creator frame lines
         for (j = 0; j < ctrls_size; j++) {
             c = controls_lines[j];
-            E2[verts2++] = ucast(surfaces[i][c[0]][c[1]]);
+            //E2[verts2++] = ucast(surfaces[i][c[0]][c[1]]);
         }
 
         // Create vertices
@@ -216,7 +211,9 @@ void Beziator::generate() {
                 glm_normalize(normal);
                 glm_vec3_copy(vertex, V[index].position);
                 glm_vec3_copy(normal, V[index].normal);
-                V[verts].color[1] = 255;
+                V[index].color[0] = 0;
+                V[index].color[1] = 255;
+                V[index].color[2] = 0;
                 /*glm_vec3_copy(vertex, V3[verts3].position);
                 E3[verts3] = verts3;
                 verts3++;
@@ -251,7 +248,7 @@ void Beziator::generate() {
                     glm_vec3_sub(((surface)[si+st[1][0]][sj+st[1][1]])->position,
                             (surface[si+st[2][0]][sj+st[2][1]])->position, m4b[1]);
                     glm_vec3_cross(m4b[0], m4b[1], m4b[2]);
-                    glm_vec3_add(V2[index].normal, m4b[2], V2[index].normal);
+                    //glm_vec3_add(V2[index].normal, m4b[2], V2[index].normal);
                     st++;
                 }
             }
@@ -267,7 +264,7 @@ void Beziator::generate() {
         E2[verts2++] = (unsigned)(i+this->points_size);
     }*/
     mesh->update(V, E);
-    mesh_skel->update(V2, E2);
+    //mesh_skel->update(V2, E2);
     //mesh_update(mesh_normals, sizei, sizei, V3, E3);
 }
 

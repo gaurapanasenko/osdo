@@ -98,6 +98,6 @@ void Mesh::draw_mode(GLenum mode) {
     glBindVertexArray(0);
 }
 
-void Mesh::draw(Shader &) {
+void Mesh::draw(Shader &, bool) {
     Mesh::draw_mode(GL_TRIANGLES);
 }

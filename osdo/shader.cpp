@@ -38,10 +38,12 @@ bool check_shader(GLuint shader, const int type) {
     GLchar *log;
     GLuint status_type = GL_COMPILE_STATUS;
     void (*gl_get)(GLuint, GLuint, GLint*) = glGetShaderiv;
+    void (*gl_info)(GLuint, GLint, GLint*, GLchar*) = glGetShaderInfoLog;
 
     if (type == 0) {
         gl_get = glGetProgramiv;
         status_type = GL_LINK_STATUS;
+        gl_info = glGetProgramInfoLog;
     }
 
     gl_get(shader, status_type, &status);
@@ -52,7 +54,7 @@ bool check_shader(GLuint shader, const int type) {
             printf("Got some error, but cant allocate memory to read it.\n");
             return false;
         }
-        glGetShaderInfoLog(shader, size, &size, log);
+        gl_info(shader, size, &size, log);
         puts(log);
         fflush(stdout);
         free(log);

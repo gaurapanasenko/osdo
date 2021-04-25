@@ -6,6 +6,9 @@ SubWindow::SubWindow(Window &window, Context &context, shared_ptr<Scene> scene)
       culling(false),
       transparency(false),
       camera_mode(false),
+      textured(false),
+      pre_generated(false),
+      level{8, 8},
       context(context),
       scene(scene),
       window(window)
@@ -19,9 +22,18 @@ bool SubWindow::params_window() {
     ImGui::Checkbox("Culling", &this->culling);
     ImGui::Checkbox("Transparency", &this->transparency);
     ImGui::Checkbox("Camera mode", &this->camera_mode);
+    ImGui::Checkbox("Textured", &this->textured);
+    bool changed = false;
+    changed |= ImGui::Checkbox("Pre generated", &this->pre_generated);
+    changed |= ImGui::DragInt2("Level", level, 1, 1, 0);
+    if (changed && pre_generated) {
+        for (auto &i : scene->objects) {
+            i.second.get_model()->generate(static_cast<size_t>(level[0]));
+        }
+    }
+
     ImGui::Text("Camera");
     vec4 vector;
-
     camera.get_position(vector);
     if (ImGui::DragFloat3("Potision", vector, 0.1f, 0, 0)) {
         camera.set_position(vector);
@@ -48,7 +60,9 @@ bool SubWindow::render_window(double delta_time) {
         static_cast<GLsizei>(size.x),
         static_cast<GLsizei>(size.y),
     };
-    Shader &sh = *context.shaders.find("main")->second;
+    string shader = "main_adv";
+    if (pre_generated) shader = "main";
+    Shader &sh = *context.shaders.find(shader)->second;
     if (buffer.pre_render(glsize)) {
         glClearColor(1, 1, 1, 1);
         glClearDepth(1.0);
@@ -61,16 +75,15 @@ bool SubWindow::render_window(double delta_time) {
                         0.1f, 100.0f, this->projection);
         sh.set_mat4("projection", this->projection);
         sh.set_float("materialShininess", 32.0f);
-        sh.set_vec3("objectColor", vec3{0,1,0});
 
         // directional light
-        vec4 direction = {0,0,-0.5,1};
+        vec4 direction = {0,-1,0,0};
         if (this->light_mode)
             this->camera.get_direction(direction);
         sh.set_vec3("dirLight.direction", direction);
-        sh.set_vec3f("dirLight.ambient", 0.1f, 0.1f, 0.1f);
+        sh.set_vec3f("dirLight.ambient", 0.2f, 0.2f, 0.2f);
         sh.set_vec3f("dirLight.diffuse", 0.6f, 0.6f, 0.6f);
-        sh.set_vec3f("dirLight.specular", 0.f, 0.f, 0.f);
+        sh.set_vec3f("dirLight.specular", 0.2f, 0.2f, 0.2f);
 
         // camera/view transformation
         this->camera.get_mat4(this->last_camera);
@@ -79,10 +92,8 @@ bool SubWindow::render_window(double delta_time) {
             this->camera.get_position(pos);
             sh.set_vec3("viewPos", pos);
         }
-        sh.set_vec3f("objectColor", 0.4f, 0.8f, 0.4f);
         sh.set_float("materialShininess", 32.0f);
         sh.set_mat4("camera", this->last_camera);
-        sh.set_vec2("vp", vec2 {size.x, size.y});
 
         sh.set_float("alpha", 1.0);
 
@@ -106,15 +117,26 @@ bool SubWindow::render_window(double delta_time) {
         if (wireframe)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+        if (textured && context.active_texture != context.textures.end()) {
+            sh.set_bool("textured", 1);
+            glBindTexture(GL_TEXTURE_2D, context.active_texture->second->get_id());
+        } else
+            sh.set_bool("textured", 0);
+
+        sh.set_int("inner", level[0]);
+        sh.set_int("outer", level[1]);
+        sh.set_float("alpha", 1);
+
         for (auto &i : scene->objects) {
             mat4 mat4buf;
-            i.second.draw(sh, mat4buf, delta_time);
+            i.second.draw(sh, mat4buf, delta_time, pre_generated);
         }
     }
     buffer.post_render(glsize);
 
     ImVec2 cursorBegin = ImGui::GetCursorPos();
-    ImGui::Image(buffer.get_tex().get_vid(), size,
+    void * tex_id = buffer.get_tex().get_vid();
+    ImGui::Image(tex_id, size,
                  ImVec2{0, 0}, ImVec2{1, 1}, ImVec4{1,1,1,1}, ImVec4{0,0,0,0});
 
     ImGui::SetCursorPos(cursorBegin);

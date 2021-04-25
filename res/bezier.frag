@@ -1,14 +1,14 @@
-#version 400 core
+#version 420 core
 layout(location = 0) out vec4 FragColor;
 
 struct Data {
     vec4 color;
     vec2 uv;
-    vec3 pos;
     vec3 normal;
+    vec3 frag_pos;
 };
 
-in Data geometry;
+layout(location = 0) in Data data;
 
 struct DirLight {
     vec3 direction;
@@ -22,6 +22,8 @@ uniform vec3 viewPos;
 uniform DirLight dirLight;
 uniform float materialShininess;
 uniform float alpha;
+uniform bool textured;
+uniform sampler2D textureSample;
 
 // calculates the color when using a directional light.
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color)
@@ -41,8 +43,12 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color)
 
 void main()
 {
-    vec3 norm = normalize(geometry.normal);
-    vec3 viewDir = normalize(viewPos - geometry.pos);
-    vec3 tmp = CalcDirLight(dirLight, norm, viewDir, vec3(0,1.0,0));
+    vec3 norm = normalize(data.normal);
+    vec3 viewDir = normalize(-viewPos - data.frag_pos);
+    vec4 color = data.color;
+    if (textured) {
+        color = texture(textureSample, data.uv);
+    }
+    vec3 tmp = CalcDirLight(dirLight, norm, viewDir, vec3(color));
     FragColor = vec4(tmp, alpha);
 }

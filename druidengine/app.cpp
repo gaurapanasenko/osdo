@@ -6,6 +6,7 @@
 #include <imgui.h>
 #include "buffer.h"
 #include "ImFileDialog.h"
+#include "image.h"
 
 #include <EASTL/algorithm.h>
 using eastl::max;
@@ -23,9 +24,10 @@ int App::init() {
     this->window.set_mouse_button_cb(App::mouse_button_callback);
     this->window.set_key_cb(App::key);
 
-    //auto shader_paths = create_shader_paths("editmode");
-    auto shader_paths = create_adv_shader_paths("bezier");
-    if (!this->context.load_shader("main", shader_paths)) {
+    auto shader_paths = create_shader_paths("bezier");
+    auto shader_adv_paths = create_adv_shader_paths("bezier");
+    if (!this->context.load_shader("main", shader_paths) ||
+            !this->context.load_shader("main_adv", shader_adv_paths)) {
         printf("Failed to compile shaders.\n");
         return -1;
     }
@@ -72,12 +74,59 @@ int App::loop() {
             ifd::FileDialog::Instance().Close();
         }
 
+        if (ifd::FileDialog::Instance().IsDone("TextureOpenDialog")) {
+            if (ifd::FileDialog::Instance().HasResult()) {
+                string res = ifd::FileDialog::Instance().GetResult().c_str();
+                context.load_texture(res.c_str());
+            }
+            ifd::FileDialog::Instance().Close();
+        }
+
         if (context.active != context.models.end()) {
             context.active->second.get_model()->edit_panel();
         }
 
         ImGui::SetNextWindowPos(ImVec2{4, 4}, ImGuiCond_FirstUseEver, ImVec2{0,0});
         ImGui::SetNextWindowSize(ImVec2{300, 512}, ImGuiCond_FirstUseEver);
+
+        if (ImGui::Begin("Textures")) {
+            if (ImGui::Button("Open texture")) {
+                ifd::FileDialog::Instance().Open(
+                            "TextureOpenDialog", "Open a texture",
+                            "Image file (*.png;*.jpg;*.jpeg;*.bmp;*.tga){.png,.jpg,.jpeg,.bmp,.tga},.*");
+            }
+            auto& models = context.models;
+            auto flags = ImGuiTableFlags_SizingStretchProp;
+            if (ImGui::BeginTable("textures_table", 2, flags)) {
+                ImGui::TableSetupColumn("Texture name", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Texture action", ImGuiTableColumnFlags_WidthFixed, -1);
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                auto &textures = context.textures;
+                if (ImGui::Selectable("None", context.active_texture == textures.end()))
+                    context.active_texture = textures.end();
+                ImGui::TableNextColumn();
+                for (auto it = textures.begin(), end = textures.end(); it != end;) {
+                    ImGui::PushID(&*it);
+                    char buf[256];
+                    snprintf(buf, 256, "Texture: \"%s\"", it->first.c_str());
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    if (ImGui::Selectable(buf, context.active_texture == it))
+                       context.active_texture = it;
+                    ImGui::TableNextColumn();
+                    bool erase = ImGui::SmallButton("-");
+                    if (erase) {
+                        if (context.active_texture == it)
+                            context.active_texture = textures.end();
+                        it = textures.erase(it);
+                    }  else ++it;
+                    ImGui::PopID();
+                }
+                ImGui::EndTable();
+            }
+        }
+        ImGui::End();
 
         if (ImGui::Begin("Models")) {
             if (ImGui::Button("Next"))
@@ -122,54 +171,54 @@ int App::loop() {
                 }
                 ImGui::EndTable();
             }
-            if (ImGui::Begin("Scenes")) {
-                auto flags = ImGuiTableFlags_SizingStretchProp;
-                if (ImGui::BeginTable("scenes_table", 2, flags)) {
-                    ImGui::TableSetupColumn("Scene name", ImGuiTableColumnFlags_WidthStretch);
-                    ImGui::TableSetupColumn("Scene action", ImGuiTableColumnFlags_WidthFixed, -1);
-                    int i = 0, j;
-                    for (auto it = scenes.begin(), end = scenes.end(); it != end;) {
-                        ImGui::PushID(&*it);
-                        char buf[256];
-                        snprintf(buf, 256, "Scene %i", i++);
-                        ImGui::TableNextRow();
-                        ImGui::TableNextColumn();
-                        if (ImGui::TreeNode(buf)) {
-                            j = 0;
-                            auto& objects = (*it)->objects;
-                            for (auto i = objects.begin(), endi = objects.end(); i != endi;) {
-                                ImGui::PushID(&*i);
-                                Object &obj = i->second;
-                                snprintf(buf, 256, "Object: \"%s\"", i->first.c_str());
-                                bool erase = false;
-                                if (ImGui::TreeNode(buf)) {
-                                    erase = ImGui::SmallButton("-");
-                                    object_edit(obj);
-                                    ImGui::TreePop();
-                                }
-                                if (erase)
-                                    i = objects.erase(i);
-                                else
-                                    ++i;
-                                ImGui::PopID();
+        }
+        ImGui::End();
+        if (ImGui::Begin("Scenes")) {
+            auto flags = ImGuiTableFlags_SizingStretchProp;
+            if (ImGui::BeginTable("scenes_table", 2, flags)) {
+                ImGui::TableSetupColumn("Scene name", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Scene action", ImGuiTableColumnFlags_WidthFixed, -1);
+                int i = 0, j;
+                for (auto it = scenes.begin(), end = scenes.end(); it != end;) {
+                    ImGui::PushID(&*it);
+                    char buf[256];
+                    snprintf(buf, 256, "Scene %i", i++);
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    if (ImGui::TreeNode(buf)) {
+                        j = 0;
+                        auto& objects = (*it)->objects;
+                        for (auto i = objects.begin(), endi = objects.end(); i != endi;) {
+                            ImGui::PushID(&*i);
+                            Object &obj = i->second;
+                            snprintf(buf, 256, "Object: \"%s\"", i->first.c_str());
+                            bool erase = false;
+                            if (ImGui::TreeNode(buf)) {
+                                erase = ImGui::SmallButton("-");
+                                object_edit(obj);
+                                ImGui::TreePop();
                             }
-                            ImGui::TreePop();
+                            if (erase)
+                                i = objects.erase(i);
+                            else
+                                ++i;
+                            ImGui::PopID();
                         }
-                        ImGui::TableNextColumn();
-                        bool erase = ImGui::SmallButton("-");
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("+")) {
-                            add_subwindow(*it);
-                        }
-                        if (erase)
-                            it = close_scene(it);
-                        else ++it;
-                        ImGui::PopID();
+                        ImGui::TreePop();
                     }
-                    ImGui::EndTable();
+                    ImGui::TableNextColumn();
+                    bool erase = ImGui::SmallButton("-");
+                    ImGui::SameLine();
+                    if (ImGui::SmallButton("+")) {
+                        add_subwindow(*it);
+                    }
+                    if (erase)
+                        it = close_scene(it);
+                    else ++it;
+                    ImGui::PopID();
                 }
+                ImGui::EndTable();
             }
-            ImGui::End();
         }
         ImGui::End();
 

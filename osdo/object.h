@@ -38,7 +38,8 @@ public:
 
     shared_ptr<Model> get_model();
 
-    void draw(Shader &shader, mat4 mat4buf, GLdouble delta_time);
+    void draw(Shader &shader, mat4 mat4buf, GLdouble delta_time,
+              bool pre_generated);
 
     void translate_object(vec3 distances);
 

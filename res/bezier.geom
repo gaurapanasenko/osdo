@@ -1,12 +1,12 @@
-#version 400 core
+#version 420 core
 layout(triangles) in;
 layout(triangle_strip, max_vertices=16) out;
 
 struct Data {
     vec4 color;
     vec2 uv;
-    vec3 pos;
     vec3 normal;
+    vec3 frag_pos;
 };
 
 in Data vertex[3];

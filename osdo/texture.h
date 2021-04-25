@@ -4,6 +4,7 @@
 #include "osdo.h"
 #include "glbindable.h"
 #include "glbinder.h"
+#include "image.h"
 
 class Texture : public GlBindable
 {
@@ -13,6 +14,8 @@ class Texture : public GlBindable
 public:
     Texture() : GlBindable(_generate()) {}
     ~Texture() override;
+
+    void update(const Image& image) const;
 
     void make_2d_multisample(GLsizei size[2]) const;
 

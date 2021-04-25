@@ -11,8 +11,8 @@ class Model {
     vector<Vertex> vertices;
 public:
     virtual ~Model();
-    virtual void draw(Shader &shader);
-    virtual void generate();
+    virtual void draw(Shader &shader, bool pre_generated = false);
+    virtual void generate(size_t d = 8);
     virtual vector<Vertex>& get_vertices();
     virtual void edit_panel();
 };

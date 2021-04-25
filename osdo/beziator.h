@@ -26,9 +26,9 @@ public:
 
     bool init();
 
-    void draw(Shader &shader) override;
+    void draw(Shader &shader, bool pre_generated) override;
 
-    void generate() override;
+    void generate(size_t d = 8) override;
 
     bool save();
 

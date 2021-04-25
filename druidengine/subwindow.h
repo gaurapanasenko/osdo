@@ -21,6 +21,9 @@ class SubWindow
     bool culling;
     bool transparency;
     bool camera_mode;
+    bool textured;
+    bool pre_generated;
+    int level[2];
     Camera camera;
     Context &context;
     shared_ptr<Scene> scene;
