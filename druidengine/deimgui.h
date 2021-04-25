@@ -1,7 +1,7 @@
 #ifndef DEIMGUI_H
 #define DEIMGUI_H
 
-#include "window.h"
+class Window;
 
 class DeImgui {
     Window *win;

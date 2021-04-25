@@ -6,7 +6,6 @@
 #include "bijective.h"
 
 #define CAMERA_DIRECTION_INIT {0.0f, 0.0f, -1.0f, 0.0f}
-#define CAMERA_DIRECTION (vec4 CAMERA_DIRECTION_INIT)
 
 class Camera : public Bijective {
     mat4 rotation;

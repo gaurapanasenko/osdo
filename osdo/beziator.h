@@ -1,15 +1,10 @@
 #ifndef BEZIATOR_H
 #define BEZIATOR_H
 
+#include <EASTL/string.h>
 #include "osdo.h"
-
-#include "shader.h"
 #include "mesh.h"
-#include "model.h"
-#include "easyvector.h"
 
-#include "EASTL/vector.h"
-#include "EASTL/string.h"
 using eastl::string;
 
 typedef GLuint surfacei_t[4][4];

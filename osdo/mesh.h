@@ -3,10 +3,8 @@
 
 #include "osdo.h"
 #include "model.h"
-#include "easyvector.h"
 
-#include "EASTL/vector.h"
-#include "vertex.h"
+struct Vertex;
 
 class Mesh : public Model {
 protected:

@@ -3,8 +3,8 @@
 
 #include "osdo.h"
 #include "glbindable.h"
-#include "glbinder.h"
-#include "image.h"
+
+class Image;
 
 class Texture : public GlBindable
 {

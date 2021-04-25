@@ -1,11 +1,13 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include "osdo.h"
-#include "vertex.h"
-#include "shader.h"
 #include "EASTL/vector.h"
+#include "osdo.h"
+
 using eastl::vector;
+
+struct Vertex;
+class Shader;
 
 class Model {
     vector<Vertex> vertices;

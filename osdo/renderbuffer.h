@@ -3,7 +3,6 @@
 
 #include "osdo.h"
 #include "glbindable.h"
-#include "glbinder.h"
 
 class Renderbuffer : public GlBindable
 {

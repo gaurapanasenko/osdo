@@ -4,7 +4,11 @@
 #include "shader.h"
 #include "conf.h"
 #include "EASTL/hash_map.h"
+#include "EASTL/shared_ptr.h"
+#include "EASTL/vector.h"
 using eastl::hash_map;
+using eastl::make_shared;
+using eastl::vector;
 
 static hash_map<ShaderType, GLenum> TYPES_MAP = {
     {VERT_SHADER, GL_VERTEX_SHADER},

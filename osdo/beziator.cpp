@@ -10,6 +10,9 @@
 
 #define ucast static_cast<unsigned>
 
+static mat4 BEZIER = GLM_BEZIER_MAT_INIT;
+static mat4 BEZIER_TANGENT = BEZIER_TANGENT_INIT;
+
 typedef Vertex *surface_t[4][4];
 
 Beziator::Beziator(const string& path) : path(path) {}
@@ -66,14 +69,14 @@ void Beziator::draw(Shader &shader, bool pre_generated) {
 void bezier_curve(float a, mat4 points, vec4 dest) {
     mat4 matrix;
     glm_vec4_cubic(a, dest);
-    glm_mat4_mul(points, mat4 GLM_BEZIER_MAT_INIT, matrix);
+    glm_mat4_mul(points, BEZIER, matrix);
     glm_mat4_mulv(matrix, dest, dest);
 }
 
 void bezier_curve_tangent(float a, mat4 points, vec4 dest) {
     mat4 matrix;
     glm_vec4_cubic(a, dest);
-    glm_mat4_mul(points, mat4 BEZIER_TANGENT_INIT, matrix);
+    glm_mat4_mul(points, BEZIER_TANGENT, matrix);
     glm_mat4_mulv(matrix, dest, dest);
 }
 

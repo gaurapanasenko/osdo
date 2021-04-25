@@ -6,11 +6,6 @@
 #include "object.h"
 #include "context.h"
 
-#include "EASTL/vector.h"
-#include "EASTL/shared_ptr.h"
-using eastl::vector;
-using eastl::shared_ptr;
-
 struct Scene {
     hash_map<string, Object> objects;
 

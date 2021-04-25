@@ -3,13 +3,16 @@
 
 #include "osdo.h"
 #include "glbindable.h"
-#include "EASTL/shared_ptr.h"
 #include "EASTL/string.h"
 #include "EASTL/hash_map.h"
-using eastl::shared_ptr;
 using eastl::string;
 using eastl::hash_map;
-using eastl::make_shared;
+
+namespace eastl {
+    template<class T> class shared_ptr;
+}
+
+using eastl::shared_ptr;
 
 enum ShaderType {
     VERT_SHADER,

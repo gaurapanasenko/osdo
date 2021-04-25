@@ -2,7 +2,7 @@
 #define CONF_H
 
 #include "osdo.h"
-#include "mesh.h"
+#include "vertex.h"
 
 #define M_PI 3.14159265358979323846
 #define M_RAD M_PI / 180
@@ -23,13 +23,6 @@
 
 #define NK_GLFW_DOUBLE_CLICK_LO 0.02
 #define NK_GLFW_DOUBLE_CLICK_HI 0.2
-
-#define BASIS0POS (vec3{ 0.0f, 0.0f,-32.0f})
-#define BASIS1POS (vec3{-8.0f, 0.0f,  0.0f})
-#define BASIS2POS (vec3{ 8.0f, 0.0f,  0.0f})
-
-#define BASIS1ROT (vec3{ 0.0f, 0.0f,  0.2f})
-#define BASIS2ROT (vec3{ 0.0f, 0.0f, -0.2f})
 
 static const unsigned int SCR_WIDTH = 1366;
 static const unsigned int SCR_HEIGHT = 700;

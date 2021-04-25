@@ -1,5 +1,4 @@
 #include "app.h"
-#include <cstdlib>
 
 int main() {
     int status;

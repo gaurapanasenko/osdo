@@ -1,4 +1,8 @@
+#include <EASTL/algorithm.h>
+#include <imgui.h>
 #include "subwindow.h"
+#include "conf.h"
+using eastl::max;
 
 SubWindow::SubWindow(Window &window, Context &context, shared_ptr<Scene> scene)
     : wireframe(false),
@@ -153,7 +157,8 @@ bool SubWindow::render_window(double delta_time) {
                 this->camera.rotate_all_camera(mouse_pos);
             else this->camera.rotate_all_inverse(mouse_pos);
         }
-        this->camera.translate(vec3{0, 0, -io.MouseWheel}, 1);
+        vec3 tr = {0, 0, -io.MouseWheel};
+        this->camera.translate(tr, 1);
     }
 
 
@@ -175,8 +180,9 @@ bool SubWindow::render_window(double delta_time) {
             vector<vec4> points(vertices_size);
 
             for (size_t i = 0; i < vertices_size; i++) {
+                vec4 view_sz = {0, 0, size.x, size.y};
                 glm_project(vertices[i].position, matr,
-                            vec4{0, 0, size.x, size.y}, points[i]);
+                            view_sz, points[i]);
                 if (!i) {
                     minz = points[i][2];
                     maxz = points[i][2];

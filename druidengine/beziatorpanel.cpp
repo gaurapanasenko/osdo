@@ -1,5 +1,6 @@
 #include "beziatorpanel.h"
 #include "imgui.h"
+#include "vertex.h"
 
 BeziatorPanel::BeziatorPanel(const string &_path)
     : Beziator(_path) {}

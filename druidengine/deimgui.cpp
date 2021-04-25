@@ -6,6 +6,7 @@
 #include "window.h"
 #include "conf.h"
 #include "ImFileDialog.h"
+#include "window.h"
 
 void DeImgui::init(Window *win) {
     this->win = win;

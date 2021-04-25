@@ -1,4 +1,7 @@
 #include "context.h"
+#include "glbinder.h"
+#include "image.h"
+#include "texture.h"
 
 Context::Context() : active(models.end()), active_texture(textures.end()) {
 

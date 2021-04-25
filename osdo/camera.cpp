@@ -1,6 +1,8 @@
 #include "camera.h"
 #include "conf.h"
 
+vec4 CAMERA_DIRECTION = CAMERA_DIRECTION_INIT;
+
 Camera::Camera()
     : rotation GLM_MAT4_IDENTITY_INIT,
       position GLM_VEC4_BLACK_INIT,

@@ -1,4 +1,5 @@
 #include "renderbuffer.h"
+#include "glbinder.h"
 
 GLuint Renderbuffer::_generate() const
 {

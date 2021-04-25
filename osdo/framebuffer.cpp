@@ -1,5 +1,6 @@
 #include "framebuffer.h"
-
+#include "texture.h"
+#include "renderbuffer.h"
 
 GLuint Framebuffer::_generate() const
 {

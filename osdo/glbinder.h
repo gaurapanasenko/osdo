@@ -1,7 +1,9 @@
 #ifndef GLBINDER_H
 #define GLBINDER_H
 
-#include "glbindable.h"
+#include "osdo.h"
+
+class GlBindable;
 
 class GlBinder
 {

@@ -2,23 +2,23 @@
 #define APP_H
 
 #include "osdo.h"
-#include "conf.h"
 
-#include "shader.h"
-#include "mesh.h"
-#include "scene.h"
-#include "camera.h"
-#include "model.h"
-#include "window.h"
-#include "deimgui.h"
+//#include "subwindow.h"
 #include "context.h"
-#include "subwindow.h"
+#include "window.h"
+//#include "scene.h"
+//#include "shader.h"
+//#include "mesh.h"
+//#include "camera.h"
+//#include "model.h"
+#include "deimgui.h"
 #include "EASTL/list.h"
-#include "EASTL/set.h"
 using eastl::list;
 using eastl::string;
 using eastl::pair;
-using eastl::set;
+
+class SubWindow;
+class Scene;
 
 enum TRANSFORMATIONS {
     ROTATE    = 0,

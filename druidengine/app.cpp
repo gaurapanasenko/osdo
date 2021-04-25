@@ -7,6 +7,8 @@
 #include "buffer.h"
 #include "ImFileDialog.h"
 #include "image.h"
+#include "scene.h"
+#include "subwindow.h"
 
 #include <EASTL/algorithm.h>
 using eastl::max;
@@ -36,8 +38,9 @@ int App::init() {
         string path = create_model_paths("car");
         if (load_model(path)) {
             auto& object = this->context.models[path];
-            object.translate_object(vec3{-5, 5, 0});
-            object.scale(vec3{4, 4, 4});
+            vec3 tr = {-5, 5, 0}, sc = {4, 4, 4};
+            object.translate_object(tr);
+            object.scale(sc);
             object.rotate_object(M_PI_F / 1.1f, X);
         }
     }

@@ -2,17 +2,10 @@
 #define SUBWINDOW_H
 
 #include "camera.h"
-#include "scene.h"
 #include "context.h"
-#include "conf.h"
-#include "EASTL/string.h"
-#include "imgui.h"
-#include <EASTL/algorithm.h>
+#include "scene.h"
 #include "buffer.h"
 #include "window.h"
-using eastl::max;
-using eastl::string;
-using eastl::shared_ptr;
 
 class SubWindow
 {

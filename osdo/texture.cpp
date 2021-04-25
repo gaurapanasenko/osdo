@@ -1,4 +1,6 @@
 #include "texture.h"
+#include "glbinder.h"
+#include "image.h"
 
 GLuint Texture::_generate() const
 {

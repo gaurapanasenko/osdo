@@ -3,10 +3,7 @@
 
 #include "osdo.h"
 
-#include "model.h"
-#include "shader.h"
 #include "object.h"
-#include "texture.h"
 #include "EASTL/hash_map.h"
 #include "EASTL/string.h"
 #include "EASTL/shared_ptr.h"
@@ -15,6 +12,9 @@ using eastl::string;
 using eastl::shared_ptr;
 using eastl::pair;
 using eastl::make_shared;
+
+class Shader;
+class Texture;
 
 struct Context
 {

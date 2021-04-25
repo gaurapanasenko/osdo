@@ -3,8 +3,9 @@
 
 #include "osdo.h"
 #include "glbindable.h"
-#include "texture.h"
-#include "renderbuffer.h"
+
+class Renderbuffer;
+class Texture;
 
 class Framebuffer : public GlBindable
 {
