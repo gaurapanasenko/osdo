@@ -6,11 +6,6 @@
 //#include "subwindow.h"
 #include "context.h"
 #include "window.h"
-//#include "scene.h"
-//#include "shader.h"
-//#include "mesh.h"
-//#include "camera.h"
-//#include "model.h"
 #include "deimgui.h"
 #include "EASTL/list.h"
 using eastl::list;
@@ -18,7 +13,7 @@ using eastl::string;
 using eastl::pair;
 
 class SubWindow;
-class Scene;
+struct Scene;
 
 enum TRANSFORMATIONS {
     ROTATE    = 0,

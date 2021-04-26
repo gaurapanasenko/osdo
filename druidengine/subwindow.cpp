@@ -175,7 +175,7 @@ bool SubWindow::render_window(double delta_time) {
             glm_mat4_mul(this->last_camera, matr, matr);
             glm_mat4_mul(this->projection, matr, matr);
             float minz = 0, maxz = 0;
-            auto& vertices = model->get_vertices();
+            auto& vertices = *model->get_vertices();
             const size_t vertices_size = vertices.size();
             vector<vec4> points(vertices_size);
 

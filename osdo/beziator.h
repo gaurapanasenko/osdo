@@ -15,6 +15,8 @@ public:
 protected:
     const string path;
     Mesh mesh, frame, normals;
+    vector<Vertex> vertices;
+    vector<GLuint> indices;
 public:
     Beziator(const string& path);
     ~Beziator() override;
@@ -29,7 +31,7 @@ public:
 
     void rotate(size_t i);
 
-    vector<Vertex> &get_vertices() override;
+    vector<Vertex> *get_vertices() override;
 };
 
 #endif // BEZIATOR_H

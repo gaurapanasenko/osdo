@@ -26,13 +26,14 @@ bool Beziator::init() {
 
     size_t points_size, surfaces_size;
     fscanf(file, "%lu%lu", &points_size, &surfaces_size);
-    vector<Vertex> points(points_size);
-    vector<GLuint> surfaces_ints(surfaces_size * 16);
-    surfacei_t *surfaces = reinterpret_cast<surfacei_t*>(surfaces_ints.data());
+    vector<Vertex> &points = vertices;
+    points.resize(points_size);
+    indices.resize(surfaces_size * 16);
+    surfacei_t *surfaces = reinterpret_cast<surfacei_t*>(indices.data());
 
     points_size = points.size();
     unsigned char color[4] = {0, 255, 0, 255};
-    surfaces_size = surfaces_ints.size() / 16;
+    surfaces_size = indices.size() / 16;
     for (size_t i = 0; i < points_size; i++) {
         vec4 init = GLM_VEC4_BLACK_INIT;
         vec4 &point = points[i].position;
@@ -49,7 +50,8 @@ bool Beziator::init() {
             }
     }
     fclose(file);
-    update(points, surfaces_ints);
+
+    update(points.data(), points.size(), indices.data(), indices.size());
     return true;
 }
 
@@ -266,7 +268,7 @@ void Beziator::generate(size_t d) {
         E2[verts2++] = (unsigned)i;
         E2[verts2++] = (unsigned)(i+this->points_size);
     }*/
-    mesh->update(V, E);
+    mesh->update(V.data(), V.size(), E.data(), E.size());
     //mesh_skel->update(V2, E2);
     //mesh_update(mesh_normals, sizei, sizei, V3, E3);
 }
@@ -281,6 +283,6 @@ void Beziator::rotate(size_t i) {
         }
 }
 
-vector<Vertex> &Beziator::get_vertices() {
-    return vertices;
+vector<Vertex> *Beziator::get_vertices() {
+    return &vertices;
 }

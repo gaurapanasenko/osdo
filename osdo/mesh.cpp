@@ -1,8 +1,8 @@
-#include <string.h>
+#include <cstring>
 #include "mesh.h"
 #include "conf.h"
 
-Mesh::Mesh() {
+Mesh::Mesh() : indices_size(0) {
     // create buffers/arrays
     glGenVertexArrays(1, &this->vao);
     glGenBuffers(1, &this->vbo);
@@ -41,56 +41,42 @@ Mesh::~Mesh() {
     glDeleteVertexArrays(1, &this->vao);
     glDeleteBuffers(1, &this->vbo);
     glDeleteBuffers(1, &this->ebo);
-    Mesh::clear();
 }
-
-vector<Vertex> &Mesh::get_vertices() {
-    return vertices;
-}
-
-void Mesh::update(vector<Vertex> vertices, vector<GLuint> indices) {
-    Mesh::clear();
-    this->vertices = vertices;
-    this->indices = indices;
-    if (this->vertices.size() && this->indices.size()) {
-        glBindVertexArray(this->vao);
-        // load data into vertex buffers
-        glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
-        glBufferData(GL_ARRAY_BUFFER,
-                     this->vertices.size() * sizeof(Vertex),
-                     this->vertices.data(), GL_DYNAMIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                     this->indices.size() * sizeof(GLuint),
-                     this->indices.data(), GL_DYNAMIC_DRAW);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-    }
-
-}
-
-void Mesh::clear() {
-    this->vertices.clear();
-    this->indices.clear();
-}
-
 
 void Mesh::cube_update() {
-    vector<Vertex> V(sizeof(EXAMPLE_CUBE_VERTEX) / sizeof(Vertex));
-    vector<GLuint> E(sizeof(EXAMPLE_CUBE_INDICIES) / sizeof(GLuint));
-    memcpy(V.data(), EXAMPLE_CUBE_VERTEX, sizeof(EXAMPLE_CUBE_VERTEX));
-    memcpy(E.data(), EXAMPLE_CUBE_INDICIES, sizeof(EXAMPLE_CUBE_INDICIES));
-    update(V, E);
+    size_t vert_size = sizeof(EXAMPLE_CUBE_VERTEX) / sizeof(Vertex);
+    size_t indi_size = sizeof(EXAMPLE_CUBE_INDICIES) / sizeof(GLuint);
+    update(EXAMPLE_CUBE_VERTEX, vert_size,
+           EXAMPLE_CUBE_INDICIES, indi_size);
+}
+
+void Mesh::update(const Vertex *vertices, size_t vertices_n,
+                  const GLuint *indices, size_t indices_n) {
+    if (vertices_n == 0 || indices_n == 0)
+        return;
+    indices_size = static_cast<GLint>(indices_n);
+    glBindVertexArray(this->vao);
+    // load data into vertex buffers
+    glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices_n * sizeof(Vertex),
+                 vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_n * sizeof(GLuint),
+                 indices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
 void Mesh::draw_mode(GLenum mode) {
+    if (!indices_size)
+        return;
     glBindVertexArray(this->vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo);
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
-    glDrawElements(mode, static_cast<GLint>(this->indices.size()),
+    glDrawElements(mode, static_cast<GLint>(this->indices_size),
                    GL_UNSIGNED_INT, nullptr);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);

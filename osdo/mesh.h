@@ -3,14 +3,12 @@
 
 #include "osdo.h"
 #include "model.h"
-
-struct Vertex;
+#include "vertex.h"
 
 class Mesh : public Model {
 protected:
-    vector<Vertex> vertices;
-    vector<GLuint> indices;
     GLuint vao, vbo, ebo;
+    GLint indices_size;
 public:
     Mesh();
     ~Mesh() override;
@@ -20,10 +18,9 @@ public:
     Mesh& operator=(const Mesh&) = delete;
     Mesh& operator=(Mesh&&) = delete;
 
-    vector<Vertex>& get_vertices() override;
     void cube_update();
-    void update(vector<Vertex> vertices, vector<GLuint> indices);
-    void clear();
+    void update(const Vertex* vertices, size_t vertices_n,
+                const GLuint* indices, size_t indices_n);
 
     void draw(Shader &shader, bool pre_generated) override;
     void draw_mode(GLenum mode);

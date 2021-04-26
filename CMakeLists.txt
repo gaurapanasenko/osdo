@@ -47,8 +47,10 @@ list(APPEND OSDO_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS})
 list(APPEND OSDO_LIBRARIES ${GLEW_LIBRARIES})
 
 # CGLM
-find_package(cglm REQUIRED)
-list(APPEND OSDO_LIBRARIES ${CGLM_LIBRARY})
+add_subdirectory(deps/cglm)
+#find_package(cglm REQUIRED)
+list(APPEND OSDO_INCLUDE_DIRS deps/cglm/include)
+list(APPEND OSDO_LIBRARIES cglm)
 
 # GLFW
 find_package(glfw3 REQUIRED)
