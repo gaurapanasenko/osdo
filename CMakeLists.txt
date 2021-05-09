@@ -45,7 +45,7 @@ set(OSDO_LIBRARIES )
 set(OSDO_INCLUDE_DIRS osdo)
 set(OSDO_SOURCES ${OSDO_SOURCE_FILES})
 
-set(DE_LIBRARIES )
+set(DE_LIBRARIES osdo)
 set(DE_INCLUDE_DIRS )
 set(DE_SOURCES ${DE_SOURCE_FILES} ${RESOURCE_FILES})
 
@@ -139,15 +139,15 @@ list(APPEND DE_LIBRARIES imgui)
 list(APPEND DE_INCLUDE_DIRS ${IMGUI_INCLUDE_DIRS})
 
 # ImGuiFileDialog
-set(ImGuiFileDialog_ROOT_DIR deps/ImGuiFileDialog)
-add_library(ImGuiFileDialog SHARED
-    ${ImGuiFileDialog_ROOT_DIR}/ImGuiFileDialog.cpp)
-target_include_directories(ImGuiFileDialog PRIVATE
-    ${ImGuiFileDialog_ROOT_DIR}
+set(imfiledialog_ROOT_DIR deps/ImGuiFileDialog)
+add_library(imfiledialog STATIC
+    ${imfiledialog_ROOT_DIR}/ImGuiFileDialog.cpp)
+target_include_directories(imfiledialog PRIVATE
+    ${imfiledialog_ROOT_DIR}
     ${IMGUI_INCLUDE_DIRS})
-target_link_libraries(ImGuiFileDialog PRIVATE imgui)
-list(APPEND DE_LIBRARIES ImGuiFileDialog)
-list(APPEND DE_INCLUDE_DIRS ${ImGuiFileDialog_ROOT_DIR})
+target_link_libraries(imfiledialog PRIVATE imgui)
+list(APPEND DE_LIBRARIES imfiledialog)
+list(APPEND DE_INCLUDE_DIRS ${imfiledialog_ROOT_DIR})
 
 # ImFileDialog
 #list(APPEND DE_INCLUDE_DIRS
@@ -175,7 +175,7 @@ target_compile_options(osdo PRIVATE -Wall -fno-exceptions)
 add_executable(druidengine ${DE_SOURCES})
 set_target_properties(druidengine PROPERTIES CXX_STANDARD 14)
 target_include_directories(druidengine PRIVATE ${DE_INCLUDE_DIRS})
-target_link_libraries(druidengine PRIVATE ${DE_LIBRARIES} osdo)
+target_link_libraries(druidengine PRIVATE ${DE_LIBRARIES})
 target_compile_options(druidengine PRIVATE -Wall)
 
 # This allows to include files relative to the root of the src directory with a <> pair
