@@ -145,6 +145,7 @@ add_library(ImGuiFileDialog SHARED
 target_include_directories(ImGuiFileDialog PRIVATE
     ${ImGuiFileDialog_ROOT_DIR}
     ${IMGUI_INCLUDE_DIRS})
+target_link_libraries(ImGuiFileDialog PRIVATE imgui)
 list(APPEND DE_LIBRARIES ImGuiFileDialog)
 list(APPEND DE_INCLUDE_DIRS ${ImGuiFileDialog_ROOT_DIR})
 
