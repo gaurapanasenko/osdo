@@ -164,3 +164,4 @@ m4/lt~obsolete.m4
 *.out
 *.app
 /res/MetalPlates006_1K_Color.jpg
+/build*/

@@ -5,7 +5,7 @@
 #include "deimgui.h"
 #include "window.h"
 #include "conf.h"
-#include "ImFileDialog.h"
+#include "ImGuiFileDialog.h"
 #include "window.h"
 
 void DeImgui::init(Window *win) {
@@ -75,26 +75,6 @@ void DeImgui::init(Window *win) {
     static const char* glsl_version = "#version 330 core";
     ImGui_ImplGlfw_InitForOpenGL(win->get(), false);
     ImGui_ImplOpenGL3_Init(glsl_version);
-
-    ifd::FileDialog::Instance().CreateTexture = [](uint8_t* data, int w, int h, char fmt) -> void* {
-        GLuint tex;
-
-        glGenTextures(1, &tex);
-        glBindTexture(GL_TEXTURE_2D, tex);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, (fmt == 0) ? GL_BGRA : GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        return (void*)(intptr_t)tex;
-    };
-    ifd::FileDialog::Instance().DeleteTexture = [](void* tex) {
-        GLuint texID = (GLuint)(size_t)(tex);
-        glDeleteTextures(1, &texID);
-    };
 }
 
 DeImgui::~DeImgui() {
@@ -114,8 +94,8 @@ void DeImgui::update() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    if (show_demo_window)
-        ImGui::ShowDemoWindow(&show_demo_window);
+    /*if (show_demo_window)
+        ImGui::ShowDemoWindow(&show_demo_window);*/
 
     int *size = win->get_size();
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
@@ -142,8 +122,8 @@ void DeImgui::update() {
         {
             if (ImGui::MenuItem("Open", nullptr))
                 open = true;
-            if (ImGui::MenuItem("Demo", nullptr))
-                show_demo_window = true;
+            /*if (ImGui::MenuItem("Demo", nullptr))
+                show_demo_window = true;*/
 
             ImGui::EndMenu();
         }
@@ -151,7 +131,7 @@ void DeImgui::update() {
     }
 
     if(open)
-        ifd::FileDialog::Instance().Open(
+        ImGuiFileDialog::Instance()->OpenDialog(
                     "ModelOpenDialog", "Open a model",
-                    "Model file (*.odom){.odom},.*");
+                    ".odom,.*", ".");
 }

@@ -1,11 +1,10 @@
-#include "float.h"
 #include "app.h"
 #include "conf.h"
 #include "shader.h"
 #include "beziatorpanel.h"
 #include <imgui.h>
 #include "buffer.h"
-#include "ImFileDialog.h"
+#include "ImGuiFileDialog.h"
 #include "image.h"
 #include "scene.h"
 #include "subwindow.h"
@@ -69,20 +68,21 @@ int App::loop() {
         // -----
         App::process_input();
 
-        if (ifd::FileDialog::Instance().IsDone("ModelOpenDialog")) {
-            if (ifd::FileDialog::Instance().HasResult()) {
-                string res = ifd::FileDialog::Instance().GetResult().c_str();
+        if (ImGuiFileDialog::Instance()->Display("ModelOpenDialog")) {
+            if (ImGuiFileDialog::Instance()->IsOk()) {
+                auto s = ImGuiFileDialog::Instance()->GetFilePathName();
+                string res = s.c_str();
                 load_model(res);
             }
-            ifd::FileDialog::Instance().Close();
+            ImGuiFileDialog::Instance()->Close();
         }
 
-        if (ifd::FileDialog::Instance().IsDone("TextureOpenDialog")) {
-            if (ifd::FileDialog::Instance().HasResult()) {
-                string res = ifd::FileDialog::Instance().GetResult().c_str();
+        if (ImGuiFileDialog::Instance()->Display("TextureOpenDialog")) {
+            if (ImGuiFileDialog::Instance()->IsOk()) {
+                auto res = ImGuiFileDialog::Instance()->GetFilePathName();
                 context.load_texture(res.c_str());
             }
-            ifd::FileDialog::Instance().Close();
+            ImGuiFileDialog::Instance()->Close();
         }
 
         if (context.active != context.models.end()) {
@@ -94,11 +94,10 @@ int App::loop() {
 
         if (ImGui::Begin("Textures")) {
             if (ImGui::Button("Open texture")) {
-                ifd::FileDialog::Instance().Open(
+                ImGuiFileDialog::Instance()->OpenDialog(
                             "TextureOpenDialog", "Open a texture",
-                            "Image file (*.png;*.jpg;*.jpeg;*.bmp;*.tga){.png,.jpg,.jpeg,.bmp,.tga},.*");
+                            ".png,.jpg,.jpeg,.bmp,.tga,.*", ".");
             }
-            auto& models = context.models;
             auto flags = ImGuiTableFlags_SizingStretchProp;
             if (ImGui::BeginTable("textures_table", 2, flags)) {
                 ImGui::TableSetupColumn("Texture name", ImGuiTableColumnFlags_WidthStretch);
