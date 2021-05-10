@@ -18,7 +18,6 @@ typedef Vertex *surface_t[4][4];
 Beziator::Beziator(const string& path) : path(path) {}
 
 bool Beziator::init() {
-    printf("%s\n", path.c_str());
     FILE *file = fopen(path.c_str(), "r");
     if (file == nullptr) {
         return false;

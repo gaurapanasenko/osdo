@@ -23,7 +23,7 @@ add_definitions(
     -DEASTL_EXCEPTIONS_ENABLED=0
     )
 if(WIN32)
-    add_link_options("-static-libstdc++")
+    add_link_options("-static-libgcc" "-static-libstdc++")
 endif()
 
 ###############################################################################
@@ -64,7 +64,7 @@ IF(NOT GLEW_FOUND)
     message("GLEW library was not found, compiling from source.")
     add_subdirectory(deps/glew)
     set(GLEW_INCLUDE_DIRS deps/glew/include)
-    set(GLEW_LIBRARIES libglew_shared)
+    set(GLEW_LIBRARIES libglew_static)
 ENDIF()
 list(APPEND OSDO_INCLUDE_DIRS ${GLEW_INCLUDE_DIRS})
 list(APPEND OSDO_LIBRARIES ${GLEW_LIBRARIES})
@@ -91,7 +91,7 @@ list(APPEND DE_LIBRARIES ${glfw3_LIBRARY})
 # EASTL
 set(EASTL_ROOT_DIR deps/EASTL)
 file(GLOB EASTL_SOURCES "${EASTL_ROOT_DIR}/source/*.cpp")
-add_library(EASTL SHARED
+add_library(EASTL STATIC
     ${EASTL_ROOT_DIR}/source/string.cpp
     ${EASTL_ROOT_DIR}/source/hashtable.cpp
     )
@@ -125,7 +125,7 @@ if(WIN32)
     message("Adding imm library for windows platforms")
     list(APPEND IMGUI_LIBRARIES imm32)
 endif()
-add_library(imgui SHARED
+add_library(imgui STATIC
     ${IMGUI_ROOT_DIR}/imgui.cpp
     ${IMGUI_ROOT_DIR}/imgui_draw.cpp
     #${IMGUI_ROOT_DIR}/imgui_demo.cpp
@@ -167,7 +167,7 @@ list(APPEND DE_LIBRARIES ${OSDO_LIBRARIES})
 ## target definitions #########################################################
 ###############################################################################
 
-add_library(osdo SHARED ${OSDO_SOURCES})
+add_library(osdo STATIC ${OSDO_SOURCES})
 target_include_directories(osdo PRIVATE ${OSDO_INCLUDE_DIRS})
 target_link_libraries(osdo PRIVATE ${OSDO_LIBRARIES})
 target_compile_options(osdo PRIVATE -Wall -fno-exceptions)
