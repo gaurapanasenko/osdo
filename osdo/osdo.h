@@ -10,7 +10,14 @@
       __typeof__ (b) _b = (b); \
     _a > _b ? _a : _b; })*/
 
-enum coord_enum {X = 0, Y = 1, Z = 2};
+/**
+ * @brief Координатні осі.
+ */
+enum coord_enum {
+    X = 0, /**< Ввісь X */
+    Y = 1, /**< Ввісь Y */
+    Z = 2, /**< Ввісь Z */
+};
 
 #ifdef __GNUC__
 #define UNUSED __attribute__ ((unused))

@@ -1,43 +1,116 @@
+/**
+ * @file conf.h
+ * @brief Конфігурація бібліотеки `osdo`
+ */
 #ifndef CONF_H
 #define CONF_H
 
 #include "osdo.h"
 #include "vertex.h"
 
+/**
+ * @brief Число пі у типі `double`
+ */
 #define M_PI 3.14159265358979323846
+/**
+ * @brief Коеффіцієнт перетворення у радіани у типі `double`
+ */
 #define M_RAD M_PI / 180
 #define M_PI_F 3.14159265358979323846f
+/**
+ * @brief Число пі у типі `float`
+ */
 #define M_RAD_F M_PI_F / 180
+/**
+ * @brief Коеффіцієнт перетворення у радіани у типі `float`
+ */
 
+/**
+ * @brief Шлях до директорії з ресурсами бібліотеки `osdo`
+ */
 #define RES_DIR "../share/osdo"
 
+/**
+ * @brief Паттерн шляху до файлу з вершинним шейдером
+ */
 #define VERTEX_PATH RES_DIR"/%s.vert"
+/**
+ * @brief Паттерн шляху до файлу з теселяційним контрольним шейдером
+ */
 #define TESC_PATH RES_DIR"/%s.tesc"
+/**
+ * @brief Паттерн шляху до файлу з теселяційним обчислювальним шейдером
+ */
 #define TESE_PATH RES_DIR"/%s.tese"
+/**
+ * @brief Паттерн шляху до файлу з геометричним шейдером
+ */
 #define GEOMETRY_PATH RES_DIR"/%s.geom"
+/**
+ * @brief Паттерн шляху до файлу з фрагментним шейдером
+ */
 #define FRAGMENT_PATH RES_DIR"/%s.frag"
+/**
+ * @brief Паттерн шляху до файлу з моделлю
+ */
 #define BEZIATOR_PATH RES_DIR"/%s.odom"
 
+/**
+ * @brief Максимальна кількість вершин
+ */
 #define MAX_VERTEX_BUFFER 512 * 1024
+/**
+ * @brief Максимальна кількість елементів
+ */
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
+/**
+ * @brief Нижня границя часу при якому спрацьовує подвійний клік мишою
+ */
 #define NK_GLFW_DOUBLE_CLICK_LO 0.02
+/**
+ * @brief Верхня границя часу при якому спрацьовує подвійний клік мишою
+ */
 #define NK_GLFW_DOUBLE_CLICK_HI 0.2
 
+/**
+ * @brief Початкова ширина вікна при запуску програми
+ */
 static const unsigned int SCR_WIDTH = 1366;
+/**
+ * @brief Початкова висота вікна при запуску програми
+ */
 static const unsigned int SCR_HEIGHT = 700;
 
+/**
+ * @brief Швидкість переміщення об'єкту
+ */
 static const float OBJECT_MOVE_SPEED   =  5.0f;
+/**
+ * @brief Швидкість повороту об'єкту
+ */
 static const float OBJECT_ROTATE_SPEED =  1.0f;
+/**
+ * @brief Коєффіцієнти швидкості для додавання обертання об'єкту
+ */
 static const float OBJECT_ANIMATE_SPEED = 1.0f;
 
+/**
+ * @brief Чутливість миші
+ */
 static const float SENSITIVITY = 0.01f;
 
+/**
+ * @brief Початкові позиції джерел світла (не використовується у програмі)
+ */
 static vec3 UNUSED LAMP_POSITIONS[] = {
     {5.0f, 0.0f, 5.0f},
     {-1.0f, 0.0f, 1.0f}
 };
 
+/**
+ * @brief Вершини куба
+ */
 static const Vertex EXAMPLE_CUBE_VERTEX[] = {
     {VERTEX_SIMPLE, 0, {-1.,  1., -1.}, { 0.,  1.,  0.}, {  0, 255,   0, 255}, {0., 0.}},
     {VERTEX_SIMPLE, 0, { 1.,  1.,  1.}, { 0.,  1.,  0.}, {255, 255, 255, 255}, {0., 0.}},
@@ -88,6 +161,9 @@ static const Vertex EXAMPLE_CUBE_VERTEX[] = {
     {VERTEX_SIMPLE, 0, { 1., -1., -1.}, { 0.,  0., -1.}, {255,   0,   0, 255}, {0., 0.}},
 };
 
+/**
+ * @brief Індекси вершин, що утворюють сторони куба.
+ */
 static const GLuint EXAMPLE_CUBE_INDICIES[] = {
      0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11,
     12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,

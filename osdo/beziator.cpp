@@ -172,8 +172,9 @@ void Beziator::generate(size_t d) {
     uint8_t si, sj;
     const uint8_t (*st)[2];
 
-    Mesh *mesh = &this->mesh, *mesh_skel = &this->frame;
-            //*mesh_normals = &this->normals;
+    Mesh *mesh = &this->mesh;
+    // Mesh *mesh_skel = &this->frame;
+    // Mesh *mesh_normals = &this->normals;
     x = 1.f / (d - 1);
 
     const size_t surfaces_size = this->indices.size() / 16;

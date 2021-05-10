@@ -1,65 +1,71 @@
+/**
+ * @file image.h
+ * @brief Задає клас, який зберігає масив пікселів, ширину та висоту.
+ */
 #ifndef IMAGE_H
 #define IMAGE_H
 #include <EASTL/shared_ptr.h>
 
 /**
- * Size of pixel in bypes.
+ * Розмір пікселя у байтах
  *
- * Name means "components" and was taken from `stb_image.h` header file library.
+ * Назва означає "компоненти" та взято з бібліотеки файлів заголовка `stb_image.h`.
  */
 #define COMP 4
 
 using eastl::shared_ptr;
 
 /**
- * @brief Channel type for image.
- * Used `unsigned char` because our channel values are in range [0, 255]
- * so has 8-bit per channel.
+ * @brief Тип каналу зображення.
+ * Використовується `unsigned char`, оскільки значення нашого каналу
+ * знаходяться в діапазоні [0, 255], таким чином канал займає 8-біт.
  */
 typedef unsigned char channel_t;
 
 /**
- * @brief Pixel type.
- * One pixel has `COMP` channels and channel defined by `channel_t` type.
- * Used 8-bit chanel with values that in range [0, 255].
- * Pixel has 4 channels (red, green, blue and alpha) so takes 4 bytes.
+ * @brief Тип пікселя.
+ * Один піксель має `COMP` каналів і канал визначений типом `channel_t`.
+ * Використовується 8-бітний канал зі значеннями, що знаходяться в діапазоні [0, 255].
+ * Піксель має 4 канали (червоний, зелений, синій та альфа), тому займає 4 байти.
  */
 typedef channel_t pixel_t[COMP];
 
 /**
- * @brief Stores pixels, width and height.
+ * @brief Зберігає масив пікселів, ширину та висоту.
  */
 class Image
 {
 public:
     /**
-     * @brief Constant pixels array.
-     * Stores smart pointer to `height * width` pixels of an image.
+     * @brief Константнний масив пікселів.
+     * Зберігає розумний вказівник на масив пікселів зображення
+     * розміром висота*ширина.
      */
     shared_ptr<const pixel_t[]> data;
     /**
-     * @brief Width of an image.
+     * @brief Ширина зображення.
      */
     const int width;
     /**
-     * @brief Height of an image.
+     * @brief Висота зображення.
      */
     const int height;
 
     /**
-     * @brief Image construcor.
-     * Stores reference to pixels, height and width of an image.
-     * @param data Smart reference to array of pixels,
-     * size must be `height * width`.
-     * @param width Width of an image.
-     * @param height Height of an image.
+     * @brief Конструктор для зображення.
+     * Зберігає посилання на масив пікселів,
+     * а також висоту та ширину зображення.
+     * @param data Розумне посилання на масив пікселів,
+     * розмір повинен бути `висота * ширина`.
+     * @param width Ширина зображення.
+     * @param height Висота зображення.
      */
     Image(shared_ptr<const pixel_t[]> data,
           const int width, const int height);
     /**
-     * @brief Read image from file.
-     * @param path Path of image file.
-     * @return `Image` class, that also references to pixels.
+     * @brief Зчитування зображення з файлу.
+     * @param path Шлях до файлу зображення.
+     * @return клас `Image`, який посилається на пікселі.
      */
     static Image fromFile(const char *path);
 };
