@@ -200,7 +200,7 @@ include(InstallRequiredSystemLibraries)
 
 # Search for compiler-provided runtime libraries and
 # add copy them to installation directory.
-#install(CODE "set(TARGET_PROJCET_FILE \"$<TARGET_FILE:${PROJECT_NAME}>\")")
+#install(CODE "set(TARGET_PROJCET_FILE \"bin/druidengine\")")
 #install(CODE "set(ADDITIONAL_LIB_PATH \"${ADDITIONAL_LIB_PATH}\")")
 #install(CODE [[
 #  file(GET_RUNTIME_DEPENDENCIES
@@ -214,18 +214,18 @@ include(InstallRequiredSystemLibraries)
 
 # All install commands get the same destination. this allows us to use paths
 # relative to the executable.
-install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+install(TARGETS druidengine DESTINATION bin)
 
 # This is basically a repeat of the file copy instruction that copies the
 # resources in the build directory, but here we tell cmake that we want it
 # in the package.
-#install(DIRECTORY res DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY res DESTINATION share/${PROJECT_NAME})
 
 # Now comes everything we need, to create a package
 # there are a lot more variables you can set, and some
 # you need to set for some package types, but we want to
 # be minimal here.
-set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+set(CPACK_PACKAGE_NAME druidengine)
 set(CPACK_PACKAGE_VERSION "1.0.0")
 
 # We don't want to split our program up into several incomplete pieces.

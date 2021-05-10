@@ -20,3 +20,6 @@
 	path = deps/ImGuiFileDialog
 	url = https://github.com/aiekick/ImGuiFileDialog
 	branch = Lib_Only
+[submodule "doc"]
+	path = doc
+	url = ../osdo_doc.git
