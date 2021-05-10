@@ -1,23 +1,31 @@
+/**
+ * @file vertex.h
+ * @brief Задає cтруктуру вершини.
+ */
 #ifndef VERTEX_H
 #define VERTEX_H
 #include "osdo.h"
 
-enum VetrexType {
-    VERTEX_SIMPLE = 0,
-    VERTEX_BEZIER = 1,
-};
-
+/**
+ * @brief Структура вершини, для передачі у відеокарту.
+ */
 struct Vertex {
-    VetrexType type;
-    int node_id;
+    /**
+     * @brief Позиція вершини у просторі.
+     */
     vec4 position;
+    /**
+     * @brief Нормаль вершини.
+     */
     vec3 normal;
+    /**
+     * @brief Колір вершини.
+     */
     unsigned char color[4];
+    /**
+     * @brief Координати вершини на текстурі.
+     */
     vec2 uv;
-    /*Vertex(VetrexType type, int node_id, vec3 position,
-           vec3 normal, unsigned char color[4], vec2 uv)
-        : type(type), node_id(node_id)
-    {}*/
 };
 
 #endif // VERTEX_H

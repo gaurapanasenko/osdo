@@ -32,7 +32,7 @@ protected:
     virtual void _bind(const GLuint id, GLenum target) const;
     /**
      * @brief Віртуальний метод, що задає ціль прив'язки за замовчуванням.
-     * @return тип ціль прив'язки за замовчуванням
+     * @return ціль прив'язки за замовчуванням
      */
     virtual GLenum _default() const;
 protected:
